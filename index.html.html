@@ -1,0 +1,2020 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>¸† ?</title>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+        }
+        
+        #start-page {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            overflow: hidden;
+            background: #0a1a2e;
+        }
+        
+        #bg-map {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+            background: #1a2a40;
+        }
+        
+        .start-mask {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 2;
+            background: radial-gradient(
+                ellipse at center,
+                rgba(8, 24, 48, 0.55) 0%,
+                rgba(8, 24, 48, 0.75) 60%,
+                rgba(5, 15, 32, 0.92) 100%
+            );
+            pointer-events: none;
+        }
+        
+        .start-content {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding-left: 12vw;
+            pointer-events: none;
+            transform: translateY(calc(-16.67vh + 70px));
+        }
+        
+        .start-title {
+            margin-bottom: 56px;
+            pointer-events: auto;
+        }
+        
+        .start-title h1 {
+            font-size: clamp(56px, 7.5vw, 96px);
+            font-weight: 200;
+            color: #ffffff;
+            letter-spacing: 22px;
+            padding-left: 22px;
+            line-height: 1.1;
+            text-shadow: 0 4px 32px rgba(0, 0, 0, 0.6);
+            margin-bottom: 18px;
+        }
+        
+        .start-title .subtitle {
+            font-size: clamp(13px, 1.3vw, 17px);
+            font-weight: 300;
+            color: rgba(180, 210, 255, 0.9);
+            letter-spacing: 10px;
+            padding-left: 10px;
+            display: flex;
+            align-items: baseline;
+            gap: 18px;
+        }
+        
+        .start-title .version {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.4);
+            letter-spacing: 0.5px;
+            font-weight: 400;
+        }
+        
+        .btn-box {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            width: 240px;
+            pointer-events: auto;
+        }
+        
+        .btn {
+            width: 100%;
+            height: 54px;
+            font-size: 15px;
+            font-family: inherit;
+            letter-spacing: 6px;
+            padding-left: 6px;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.25s ease;
+            position: relative;
+            overflow: hidden;
+            pointer-events: auto;
+        }
+        
+        .start-btn,
+        .load-btn,
+        .about-btn {
+            background: rgba(255, 255, 255, 0.08);
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.35);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+        
+        .start-btn:hover,
+        .load-btn:hover,
+        .about-btn:hover {
+            background: rgba(255, 255, 255, 0.16);
+            border-color: rgba(255, 255, 255, 0.65);
+        }
+        
+        @keyframes jellyPress {
+            0%   { transform: scale(1); }
+            35%  { transform: scale(0.96); }
+            100% { transform: scale(1); }
+        }
+        
+        .btn.pressed,
+        .buy-plane-btn.pressed,
+        .pc-buy.pressed,
+        .back-btn.pressed,
+        .naming-confirm.pressed,
+        .buy-plane-btn-small.pressed,
+        .fleet-btn.pressed,
+        .route-create-btn.pressed,
+        .ap-panel-btn.pressed {
+            animation: jellyPress 0.2s ease-out;
+        }
+        
+        .plane-marker {
+            background: none;
+            border: none;
+        }
+        
+        .plane-rot {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.05s linear;
+        }
+        
+        #about-page {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 1000;
+            background: #ffffff;
+        }
+        
+        #about-page.active { display: block; }
+        
+        .about-center {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #111111;
+            user-select: none;
+            pointer-events: none;
+        }
+        
+        .about-copyright {
+            font-size: clamp(24px, 4.5vw, 64px);
+            font-weight: 200;
+            letter-spacing: 6px;
+            color: #1a1a1a;
+            line-height: 1.2;
+            text-align: center;
+            white-space: nowrap;
+        }
+        
+        .back-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 44px;
+            height: 44px;
+            border: 1px solid #d0d0d0;
+            background: #ffffff;
+            color: #333333;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 20px;
+            font-family: inherit;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            z-index: 10;
+        }
+        
+        .back-btn:hover {
+            background: #f5f5f5;
+            border-color: #999999;
+        }
+        
+        #game-page {
+            display: none;
+            width: 100vw;
+            height: 100vh;
+            flex-direction: column;
+            background: #ffffff;
+        }
+        
+        #game-page.active { display: flex; }
+        
+        .top-bar {
+            height: 48px;
+            background: #0d2b4e;
+            color: white;
+            display: flex;
+            align-items: center;
+            padding: 0 14px;
+            gap: 14px;
+            flex-shrink: 0;
+        }
+        
+        .top-logo {
+            font-size: 16px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+        
+        .top-logo .icon { font-size: 18px; }
+        
+        .top-edit {
+            background: rgba(255,255,255,0.15);
+            border: 1px solid rgba(255,255,255,0.35);
+            color: white;
+            padding: 2px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        
+        .top-money {
+            display: flex;
+            align-items: baseline;
+            gap: 6px;
+            margin-left: 4px;
+            white-space: nowrap;
+        }
+        
+        .top-money .money-icon {
+            font-size: 13px;
+            color: #f5c518;
+            font-weight: bold;
+        }
+        
+        .top-money .money-value {
+            font-size: 17px;
+            font-weight: bold;
+            color: #f5c518;
+            letter-spacing: 1px;
+        }
+        
+        .top-money .money-unit {
+            font-size: 12px;
+            color: rgba(245, 197, 24, 0.75);
+            font-weight: 400;
+        }
+        
+        .main-body {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+            min-height: 0;
+        }
+        
+        .left-panel {
+            width: 16vw;
+            min-width: 150px;
+            background: #ffffff;
+            border-right: 1px solid #c0d4e8;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+        
+        .main-area {
+            flex: 1;
+            min-width: 0;
+            position: relative;
+            background: #000000;
+            overflow: hidden;
+        }
+        
+        #map {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 1;
+            background: #e8eef5;
+            touch-action: none;
+        }
+        
+        .flight-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 22%;
+            min-height: 100px;
+            background: #fffdf2;
+            border-left: 2px solid #f5c518;
+            border-right: 2px solid #f5c518;
+            border-bottom: 2px solid #f5c518;
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            padding: 10px;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+            z-index: 10;
+            overflow: hidden;
+        }
+        
+        .flight-bar .fb-label {
+            position: absolute;
+            top: 0;
+            left: 8px;
+            background: #f5c518;
+            color: #5a4a00;
+            font-size: 12px;
+            font-weight: bold;
+            padding: 3px 10px;
+            border-radius: 0 0 6px 6px;
+            white-space: nowrap;
+        }
+        
+        .overlay {
+            position: absolute;
+            top: max(22%, 100px);
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .overlay.active { display: flex; }
+        .overlay.no-dim { background: transparent; }
+        
+        .buy-modal {
+            background: #ffffff;
+            border-radius: 14px;
+            width: 100%;
+            height: 100%;
+            max-width: 560px;
+            max-height: 460px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.45);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 16px;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 15px;
+            font-weight: bold;
+            color: #1e293b;
+            flex-shrink: 0;
+        }
+        
+        .modal-close {
+            cursor: pointer;
+            font-size: 18px;
+            color: #94a3b8;
+            line-height: 1;
+            padding: 0 4px;
+            user-select: none;
+        }
+        
+        .modal-close:hover { color: #475569; }
+        
+        .modal-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 14px 16px;
+        }
+        
+        .ap-panel-btn {
+            padding: 2px 8px;
+            background: #2b5ce6;
+            color: #ffffff;
+            border: none;
+            border-radius: 4px;
+            font-size: 11px;
+            font-family: inherit;
+            font-weight: 500;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background 0.15s;
+            flex-shrink: 0;
+        }
+        
+        .ap-panel-btn:hover { background: #1e4ed4; }
+        .ap-panel-btn:active { background: #1740b8; }
+        
+        #airport-panel-body {
+            padding: 18px 20px;
+        }
+        
+        .ap-panel-header {
+            display: flex;
+            align-items: baseline;
+            gap: 12px;
+            margin-bottom: 18px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .ap-panel-name {
+            font-size: 22px;
+            font-weight: bold;
+            color: #1e293b;
+            letter-spacing: 1px;
+        }
+        
+        .ap-panel-code {
+            font-size: 13px;
+            font-weight: bold;
+            color: #2b5ce6;
+            letter-spacing: 3px;
+            padding: 3px 10px 3px 7px;
+            background: #eef2ff;
+            border-radius: 5px;
+        }
+        
+        .ap-panel-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+        
+        .ap-panel-item {
+            background: #f8fafc;
+            border: 1px solid #eef2f7;
+            border-radius: 10px;
+            padding: 12px 14px;
+        }
+        
+        .ap-panel-label {
+            font-size: 11px;
+            color: #94a3b8;
+            margin-bottom: 8px;
+            letter-spacing: 1px;
+        }
+        
+        .ap-panel-value {
+            font-size: 20px;
+            font-weight: bold;
+            color: #1e293b;
+            letter-spacing: 0.5px;
+            line-height: 1;
+        }
+        
+        .ap-panel-value .unit {
+            font-size: 11px;
+            font-weight: 400;
+            color: #94a3b8;
+            margin-left: 3px;
+            letter-spacing: 0;
+        }
+        
+        .ap-panel-index {
+            background: linear-gradient(135deg, #eef2ff 0%, #e2eaff 100%);
+            border: 1px solid #d0dcff;
+            border-radius: 12px;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .ap-panel-index-label {
+            font-size: 13px;
+            color: #2b5ce6;
+            font-weight: 500;
+            letter-spacing: 2px;
+        }
+        
+        .ap-panel-index-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #2b5ce6;
+            letter-spacing: 0.5px;
+            line-height: 1;
+        }
+        
+        .route-modal-body {
+            position: relative;
+            padding: 0;
+            overflow: hidden;
+        }
+        
+        .route-info {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            align-items: center;
+            justify-items: center;
+            padding: 60px 30px 100px;
+            gap: 16px;
+        }
+        
+        .route-ap { text-align: center; }
+        
+        .route-ap-name {
+            font-size: 16px;
+            font-weight: bold;
+            color: #1e293b;
+            margin-bottom: 8px;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+        
+        .route-ap-iata {
+            font-size: 12px;
+            color: #94a3b8;
+            letter-spacing: 3px;
+            font-weight: 500;
+        }
+        
+        .route-arrow {
+            font-size: 22px;
+            color: #cbd5e1;
+            font-weight: 300;
+            line-height: 1;
+        }
+        
+        .route-create-btn {
+            position: absolute;
+            bottom: 16px;
+            right: 16px;
+            padding: 6px 14px;
+            background: #2b5ce6;
+            color: #ffffff;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-family: inherit;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.15s;
+            white-space: nowrap;
+        }
+        
+        .route-create-btn:hover { background: #1e4ed4; }
+        .route-create-btn:active { background: #1740b8; }
+        
+        .plane-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 12px;
+            background: #f8fafc;
+        }
+        
+        .plane-card .pc-name {
+            font-size: 14px;
+            font-weight: bold;
+            color: #1e293b;
+            margin-bottom: 4px;
+        }
+        
+        .plane-card .pc-price {
+            font-size: 13px;
+            color: #dc2626;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .plane-card .pc-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4px 10px;
+            font-size: 12px;
+            color: #475569;
+            margin-bottom: 12px;
+        }
+        
+        .plane-card .pc-buy {
+            display: block;
+            width: 100%;
+            padding: 8px 0;
+            background: #2b5ce6;
+            color: #ffffff;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        
+        .plane-card .pc-buy:hover { background: #1e4ed4; }
+        .plane-card .pc-buy:active { background: #1740b8; }
+        
+        .plane-card .pc-buy:disabled {
+            background: #cbd5e1;
+            color: #94a3b8;
+            cursor: not-allowed;
+        }
+        
+        .plane-card .pc-buy:disabled:hover { background: #cbd5e1; }
+        
+        .naming-form {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            height: 100%;
+            padding: 20px 8px;
+        }
+        
+        .naming-label {
+            font-size: 13px;
+            color: #64748b;
+            margin-bottom: 10px;
+            letter-spacing: 1px;
+        }
+        
+        .naming-input {
+            width: 100%;
+            padding: 12px 14px;
+            font-size: 15px;
+            font-family: inherit;
+            color: #1e293b;
+            background: #f8fafc;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            outline: none;
+            transition: border-color 0.2s, background 0.2s;
+            letter-spacing: 1px;
+        }
+        
+        .naming-input:focus {
+            border-color: #2b5ce6;
+            background: #ffffff;
+        }
+        
+        .naming-confirm {
+            margin-top: 24px;
+            width: 100%;
+            padding: 12px 0;
+            background: #2b5ce6;
+            color: #ffffff;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            letter-spacing: 4px;
+            padding-left: 4px;
+            cursor: pointer;
+            transition: background 0.15s;
+            font-family: inherit;
+        }
+        
+        .naming-confirm:hover { background: #1e4ed4; }
+        .naming-confirm:active { background: #1740b8; }
+        
+        .toast {
+            position: absolute;
+            top: 22%;
+            left: 50%;
+            transform: translate(-50%, -10px);
+            background: rgba(20, 20, 20, 0.88);
+            color: #ffffff;
+            font-size: 13px;
+            padding: 10px 20px;
+            border-radius: 8px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s, transform 0.25s;
+            z-index: 2000;
+            white-space: nowrap;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+        }
+        
+        .toast.show {
+            opacity: 1;
+            transform: translate(-50%, 0);
+        }
+        
+        .right-panel {
+            width: 32vw;
+            min-width: 320px;
+            background: #f0f4f8;
+            border-left: 1px solid #c0d4e8;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+        
+        .tab-bar {
+            display: flex;
+            background: #ffffff;
+            border-bottom: 1px solid #d0dce8;
+            flex-shrink: 0;
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 10px 2px;
+            text-align: center;
+            font-size: 13px;
+            color: #444;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            white-space: nowrap;
+            user-select: none;
+        }
+        
+        .tab.active {
+            color: #2563eb;
+            border-bottom-color: #2563eb;
+            font-weight: bold;
+        }
+        
+        .panel-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px;
+            display: none;
+        }
+        
+        .panel-content.active {
+            display: block;
+            background: #ffffff;
+        }
+        
+        .plane-panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+            padding: 0 2px;
+        }
+        
+        .plane-panel-title {
+            font-size: 15px;
+            font-weight: bold;
+            color: #1e293b;
+            letter-spacing: 1px;
+        }
+        
+        .buy-plane-btn-small {
+            background: #2b5ce6;
+            color: #ffffff;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-family: inherit;
+            font-weight: bold;
+            padding: 6px 14px;
+            cursor: pointer;
+            transition: background 0.15s;
+            white-space: nowrap;
+        }
+        
+        .buy-plane-btn-small:hover { background: #1e4ed4; }
+        .buy-plane-btn-small:active { background: #1740b8; }
+        
+        .fleet-empty {
+            text-align: center;
+            color: #94a3b8;
+            font-size: 13px;
+            padding: 40px 0;
+            letter-spacing: 1px;
+        }
+        
+        .fleet-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 12px 14px;
+            margin-bottom: 10px;
+        }
+        
+        .fleet-card .fc-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+        
+        .fleet-card .fc-name {
+            font-size: 15px;
+            font-weight: bold;
+            color: #2b5ce6;
+            letter-spacing: 0.5px;
+        }
+        
+        .fleet-card .fc-status {
+            font-size: 12px;
+            color: #16a34a;
+            background: #dcfce7;
+            padding: 2px 10px;
+            border-radius: 10px;
+            font-weight: 500;
+        }
+        
+        .fleet-card .fc-info {
+            font-size: 12px;
+            color: #64748b;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+        }
+        
+        .fleet-card .fc-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 6px;
+        }
+        
+        .fleet-btn {
+            padding: 4px 12px;
+            font-size: 12px;
+            font-family: inherit;
+            font-weight: 500;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s;
+            white-space: nowrap;
+        }
+        
+        .fleet-btn.schedule {
+            background: #e9eef4;
+            color: #475569;
+            border: 1px solid #e0e6ed;
+        }
+        
+        .fleet-btn.schedule:hover { background: #dbe3ec; }
+        .fleet-btn.schedule:active { background: #cbd5e1; }
+        
+        .fleet-btn.sell {
+            background: #fde6e6;
+            color: #dc2626;
+            border: 1px solid #fbd5d5;
+        }
+        
+        .fleet-btn.sell:hover { background: #fbd5d5; }
+        .fleet-btn.sell:active { background: #f8b4b4; }
+        
+        .bottom-bar {
+            height: 46px;
+            background: #f5f8fb;
+            border-top: 1px solid #c0d4e8;
+            display: flex;
+            align-items: center;
+            padding: 0 14px;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+        
+        .speed-btn {
+            padding: 6px 14px;
+            font-size: 13px;
+            border: 1px solid #c0d4e8;
+            background: #ffffff;
+            border-radius: 4px;
+            cursor: pointer;
+            color: #444;
+        }
+        
+        .speed-btn.active {
+            background: #2563eb;
+            color: white;
+            border-color: #2563eb;
+        }
+        
+        .bottom-spacer { flex: 1; }
+        
+        .save-btn {
+            padding: 6px 16px;
+            font-size: 13px;
+            border: 1px solid #c0d4e8;
+            background: #ffffff;
+            border-radius: 4px;
+            cursor: pointer;
+            color: #444;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        @media (max-width: 1366px) {
+            .left-panel { width: 14vw; min-width: 130px; }
+            .right-panel { width: 30vw; min-width: 280px; }
+        }
+        
+        @media (max-width: 1024px) {
+            .left-panel { width: 12vw; min-width: 110px; }
+            .right-panel { width: 34vw; min-width: 260px; }
+            .tab { font-size: 12px; }
+            .panel-content { padding: 10px; }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="start-page">
+        <div id="bg-map"></div>
+        <div class="start-mask"></div>
+
+        <div class="start-content">
+            <div class="start-title">
+                <h1>¸† ?</h1>
+                <div class="subtitle">
+                    <span>Winged Echo</span>
+                    <span class="version">H, 0.1.0 ∑ Winged Echo.V0.1.0</span>
+                </div>
+            </div>
+
+            <div class="btn-box">
+                <button class="btn start-btn" onclick="enterGame(this)"> À8</button>
+                <button class="btn load-btn">˚÷Xc</button>
+                <button class="btn about-btn" onclick="openAbout(this)">sé</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="about-page">
+        <button class="back-btn" onclick="closeAbout(this)">ê</button>
+        <div class="about-center">
+            <div class="about-copyright">© 2026 a_cathay_359</div>
+        </div>
+    </div>
+
+    <div id="game-page">
+        <div class="top-bar">
+            <div class="top-logo"><span class="icon"></span>¸† ?</div>
+            <button class="top-edit">Ó9</button>
+            <div class="top-money">
+                <span class="money-icon">•</span>
+                <span class="money-value" id="money-value">10.00</span>
+                <span class="money-unit">ø</span>
+            </div>
+        </div>
+
+        <div class="main-body">
+            <div class="left-panel"></div>
+
+            <div class="main-area">
+                <div id="map"></div>
+
+                <div class="flight-bar">
+                    <div class="fb-label">*Ì®</div>
+                </div>
+
+                <div id="toast" class="toast"></div>
+
+                <div id="buy-overlay" class="overlay" onclick="if(event.target===this) closeBuyModal()">
+                    <div class="buy-modal">
+                        <div class="modal-header">
+                            <span>-pﬁ:</span>
+                            <span class="modal-close" onclick="closeBuyModal()"></span>
+                        </div>
+                        <div class="modal-body">
+                            <div class="plane-card">
+                                <div class="pc-name">z¢ A320neo (LEAP-1A)</div>
+                                <div class="pc-price">• 4.3 ø</div>
+                                <div class="pc-stats">
+                                    <span>=Î ·*¶850 km/h</span>
+                                    <span>=œ *6200 km</span>
+                                    <span>ñ  'wﬁÕœ79 (</span>
+                                    <span>=Ê  '}Õ17 (</span>
+                                    <span>˝ √ππœ26000 G</span>
+                                    <span>=% ·*π2.94 G/Cs</span>
+                                </div>
+                                <button class="pc-buy" id="pc-buy-btn" onclick="buyPlane(this)">-p</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="route-overlay" class="overlay" onclick="if(event.target===this) closeRouteModal()">
+                    <div class="buy-modal">
+                        <div class="modal-header">
+                            <span>˙À*ø</span>
+                            <span class="modal-close" onclick="closeRouteModal()"></span>
+                        </div>
+                        <div class="modal-body route-modal-body">
+                            <div class="route-info">
+                                <div class="route-ap">
+                                    <div class="route-ap-name" id="route-from-name"></div>
+                                    <div class="route-ap-iata" id="route-from-iata"></div>
+                                </div>
+                                <div class="route-arrow">í</div>
+                                <div class="route-ap">
+                                    <div class="route-ap-name" id="route-to-name"></div>
+                                    <div class="route-ap-iata" id="route-to-iata"></div>
+                                </div>
+                            </div>
+                            <button class="route-create-btn" onclick="confirmRoute(this)">+ ˙À</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="naming-overlay" class="overlay" onclick="if(event.target===this) closeNamingModal()">
+                    <div class="buy-modal">
+                        <div class="modal-header">
+                            <span>n§-p</span>
+                            <span class="modal-close" onclick="closeNamingModal()"></span>
+                        </div>
+                        <div class="modal-body">
+                            <div class="naming-form">
+                                <label class="naming-label">ﬁ:</label>
+                                <input type="text" id="naming-input" class="naming-input" value="A320neo-0001" spellcheck="false" autocomplete="off">
+                                <button class="naming-confirm" onclick="confirmBuy(this)">n§-p</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="airport-panel-overlay" class="overlay" onclick="if(event.target===this) closeAirportPanel()">
+                    <div class="buy-modal">
+                        <div class="modal-header">
+                            <span>::b</span>
+                            <span class="modal-close" onclick="closeAirportPanel()"></span>
+                        </div>
+                        <div class="modal-body" id="airport-panel-body"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="right-panel">
+                <div class="tab-bar">
+                    <div class="tab active" onclick="switchTab(this, 'tab-passenger')">¢A</div>
+                    <div class="tab" onclick="switchTab(this, 'tab-plane')">ﬁ:</div>
+                    <div class="tab" onclick="switchTab(this, 'tab-route')">*ø</div>
+                    <div class="tab" onclick="switchTab(this, 'tab-airport')">::</div>
+                </div>
+
+                <div id="tab-passenger" class="panel-content active"></div>
+
+                <div id="tab-plane" class="panel-content">
+                    <div class="plane-panel-header">
+                        <span class="plane-panel-title">ﬁ:h</span>
+                        <button class="buy-plane-btn-small" onclick="openBuyModal(this)">+ «-</button>
+                    </div>
+                    <div id="fleet-list"></div>
+                </div>
+
+                <div id="tab-route" class="panel-content"></div>
+
+                <div id="tab-airport" class="panel-content"></div>
+            </div>
+        </div>
+
+        <div class="bottom-bar">
+            <button class="speed-btn">∂ ÁÌ</button>
+            <button class="speed-btn">x2</button>
+            <button class="speed-btn">x40</button>
+            <button class="speed-btn">x300</button>
+            <button class="speed-btn">x2000</button>
+            <div class="bottom-spacer"></div>
+            <button class="save-btn">=æ Xc</button>
+            <button class="save-btn">=¡ ˚c</button>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script>
+        // ==================== Plb ====================
+        
+        const PI = Math.PI;
+        const A = 6378245.0;
+        const EE = 0.00669342162296594323;
+        
+        function outOfChina(lng, lat) {
+            return lng < 72.004 || lng > 137.8347 || lat < 0.8293 || lat > 55.8271;
+        }
+        
+        function transformLat(x, y) {
+            let ret = -100.0 + 2.0 * x + 3.0 * y + 0.2 * y * y + 0.1 * x * y + 0.2 * Math.sqrt(Math.abs(x));
+            ret += (20.0 * Math.sin(6.0 * x * PI) + 20.0 * Math.sin(2.0 * x * PI)) * 2.0 / 3.0;
+            ret += (20.0 * Math.sin(y * PI) + 40.0 * Math.sin(y / 3.0 * PI)) * 2.0 / 3.0;
+            ret += (160.0 * Math.sin(y / 12.0 * PI) + 320 * Math.sin(y * PI / 30.0)) * 2.0 / 3.0;
+            return ret;
+        }
+        
+        function transformLng(x, y) {
+            let ret = 300.0 + x + 2.0 * y + 0.1 * x * x + 0.1 * x * y + 0.1 * Math.sqrt(Math.abs(x));
+            ret += (20.0 * Math.sin(6.0 * x * PI) + 20.0 * Math.sin(2.0 * x * PI)) * 2.0 / 3.0;
+            ret += (20.0 * Math.sin(x * PI) + 40.0 * Math.sin(x / 3.0 * PI)) * 2.0 / 3.0;
+            ret += (150.0 * Math.sin(x / 12.0 * PI) + 300.0 * Math.sin(x / 30.0 * PI)) * 2.0 / 3.0;
+            return ret;
+        }
+        
+        function wgs84ToGcj02(lng, lat) {
+            if (outOfChina(lng, lat)) return [lng, lat];
+            let dLat = transformLat(lng - 105.0, lat - 35.0);
+            let dLng = transformLng(lng - 105.0, lat - 35.0);
+            const radLat = lat / 180.0 * PI;
+            let magic = Math.sin(radLat);
+            magic = 1 - EE * magic * magic;
+            const sqrtMagic = Math.sqrt(magic);
+            dLat = (dLat * 180.0) / ((A * (1 - EE)) / (magic * sqrtMagic) * PI);
+            dLng = (dLng * 180.0) / (A / sqrtMagic * Math.cos(radLat) * PI);
+            return [lng + dLng, lat + dLat];
+        }
+        
+        // ==================== pnB ====================
+        
+        const AIRCRAFT_DATA = {
+            A320neo: {
+                name: "z¢ A320neo (LEAP-1A)",
+                shortName: "A320neo",
+                displayName: "z¢ A320neo",
+                seatCapacity: 180,
+                cruiseSpeed: 850,
+                range: 6200,
+                mtow: 79000,
+                maxPayload: 17,
+                fuelCapacity: 26000,
+                cruiseFuelBurn: 2.94,
+                newPrice: 430000000
+            }
+        };
+        
+        const AIRPORT_DATA = [
+            { iata: "PEK", name: "¨ñ˝", city: "¨", lat: 40.0801, lng: 116.5846,
+              throughput: 7076, grade: "4F", distance: 25,   isPlateau: false },
+        
+            { iata: "PVG", name: "
+wf", city: "
+w", lat: 31.1443, lng: 121.8083,
+              throughput: 8499, grade: "4F", distance: 30,   isPlateau: false },
+        
+            { iata: "CAN", name: "ﬁ}ë", city: "ﬁ", lat: 23.3924, lng: 113.2988,
+              throughput: 8359, grade: "4F", distance: 28,   isPlateau: false },
+        
+            { iata: "CTU", name: "˝ÃA", city: "˝", lat: 30.5785, lng: 103.9471,
+              throughput: 3352, grade: "4F", distance: 16,   isPlateau: false },
+        
+            { iata: "TFU", name: "˝)ú", city: "˝", lat: 30.3125, lng: 104.4417,
+              throughput: 5669, grade: "4F", distance: 50,   isPlateau: false },
+        
+            { iata: "URC", name: "LÅ(P)q", city: "LÅ(P", lat: 43.9071, lng: 87.4742,
+              throughput: 2918, grade: "4F", distance: 16.8, isPlateau: false },
+        
+            { iata: "SZX", name: "Ò3ùâ", city: "Ò3", lat: 22.6393, lng: 113.8106,
+              throughput: 6649, grade: "4F", distance: 32,   isPlateau: false },
+        
+            { iata: "KMG", name: "4", city: "", lat: 25.1019, lng: 102.9292,
+              throughput: 4969, grade: "4F", distance: 24.5, isPlateau: false },
+        
+            { iata: "HRB", name: "»Ë*s", city: "»Ë", lat: 45.6234, lng: 126.2500,
+              throughput: 2465, grade: "4E", distance: 33,   isPlateau: false }
+        ];
+        
+        const AIRPORT_CONSTANTS = {
+            GRADE_FACTOR: {
+                "4F": 1.00,
+                "4E": 0.90,
+                "4D": 0.78,
+                "4C": 0.62
+            },
+            DISTANCE_DIVISOR: 250
+        };
+        
+        function calcPassengerIndex(airport) {
+            const gradeFactor = AIRPORT_CONSTANTS.GRADE_FACTOR[airport.grade] || 0.62;
+            const distanceFactor = Math.max(0, 1 - airport.distance / AIRPORT_CONSTANTS.DISTANCE_DIVISOR);
+            return Math.sqrt(airport.throughput) * gradeFactor * distanceFactor;
+        }
+        
+        const AIRPORT_GCJ = AIRPORT_DATA.map(function (a) {
+            const g = wgs84ToGcj02(a.lng, a.lat);
+            return {
+                iata: a.iata,
+                name: a.name,
+                city: a.city,
+                lat: g[1],
+                lng: g[0],
+                throughput: a.throughput,
+                grade: a.grade,
+                distance: a.distance,
+                isPlateau: a.isPlateau,
+                passengerIndex: calcPassengerIndex(a)
+            };
+        });
+        
+        const DEMO_ROUTES = [
+            [0, 1],
+            [2, 3],
+            [6, 5],
+            [7, 8]
+        ];
+        
+        // ==================== 8∂ ====================
+        
+        let gameState = {
+            money: 1000000000,
+            fleet: []
+        };
+        
+        let pendingAirport = null;
+        let selectedAirport = null;
+        let routePending = null;
+        let routes = [];
+        let overlayZCounter = 100;
+        
+        function updateMoneyDisplay() {
+            const yi = gameState.money / 100000000;
+            document.getElementById('money-value').textContent = yi.toFixed(2);
+        }
+        
+        function countFleetByType(type) {
+            return gameState.fleet.filter(function (p) {
+                return p.type === type;
+            }).length;
+        }
+        
+        function routeExists(fromIata, toIata) {
+            return routes.some(function (r) {
+                return r.from === fromIata && r.to === toIata;
+            });
+        }
+        
+        // ==================== ::π˚§í ====================
+        
+        function handleAirportClick(airport) {
+        
+            if (!pendingAirport && !selectedAirport) {
+                pendingAirport = airport;
+                airport._hotzone.openPopup();
+                showToast('çπ !˙À*ø');
+                return;
+            }
+        
+            if (pendingAirport && pendingAirport.iata === airport.iata) {
+                pendingAirport = null;
+                selectedAirport = airport;
+                setAirportSelected(airport, true);
+                showToast('wπ' + airport.iata + ' ∑ ' + airport.name);
+                return;
+            }
+        
+            if (pendingAirport && pendingAirport.iata !== airport.iata) {
+                pendingAirport._hotzone.closePopup();
+                pendingAirport = airport;
+                airport._hotzone.openPopup();
+                showToast('çπ !˙À*ø');
+                return;
+            }
+        
+            if (selectedAirport && selectedAirport.iata === airport.iata) {
+                setAirportSelected(selectedAirport, false);
+                selectedAirport = null;
+                showToast('Ú÷àwπ');
+                return;
+            }
+        
+            if (selectedAirport && selectedAirport.iata !== airport.iata) {
+        
+                if (routeExists(selectedAirport.iata, airport.iata)) {
+                    setAirportSelected(selectedAirport, false);
+                    selectedAirport = null;
+                    showToast('Ú	Â*ø');
+                    return;
+                }
+        
+                routePending = { from: selectedAirport, to: airport };
+                airport._hotzone.openPopup();
+        
+                document.getElementById('route-from-name').textContent = selectedAirport.name;
+                document.getElementById('route-from-iata').textContent = selectedAirport.iata;
+                document.getElementById('route-to-name').textContent = airport.name;
+                document.getElementById('route-to-iata').textContent = airport.iata;
+        
+                openOverlay('route-overlay');
+                return;
+            }
+        }
+        
+        function setAirportSelected(airport, selected) {
+            const dot = airport._dot;
+            const hotzone = airport._hotzone;
+            if (!dot || !hotzone) return;
+        
+            if (selected) {
+                dot.setRadius(6.5);
+                dot.setStyle({ weight: 2 });
+                hotzone.openPopup();
+            } else {
+                dot.setRadius(5);
+                dot.setStyle({ weight: 1.5 });
+                hotzone.closePopup();
+            }
+        }
+        
+        function drawRoute(from, to) {
+            const pts = makeArc(from, to, 60);
+        
+            const line = L.polyline(pts, {
+                color: '#2563eb',
+                weight: 2,
+                opacity: 0.7,
+                interactive: false
+            }).addTo(gameMap);
+        
+            routes.push({
+                from: from.iata,
+                to: to.iata,
+                fromName: from.name,
+                toName: to.name,
+                line: line
+            });
+        
+            showToast(from.iata + ' í ' + to.iata + ' *øÚ˙À');
+        }
+        
+        function closeRouteModal() {
+            closeOverlay('route-overlay');
+        
+            if (selectedAirport) {
+                setAirportSelected(selectedAirport, false);
+            }
+            selectedAirport = null;
+        
+            if (routePending && routePending.to) {
+                routePending.to._hotzone.closePopup();
+            }
+            routePending = null;
+        }
+        
+        function confirmRoute(btn) {
+            if (btn.classList.contains('pressed')) return;
+            btn.classList.add('pressed');
+        
+            setTimeout(function () {
+                btn.classList.remove('pressed');
+        
+                if (!routePending) return;
+        
+                const from = routePending.from;
+                const to = routePending.to;
+        
+                drawRoute(from, to);
+        
+                setAirportSelected(from, false);
+                to._hotzone.closePopup();
+        
+                selectedAirport = null;
+                routePending = null;
+        
+                closeOverlay('route-overlay');
+            }, 200);
+        }
+        
+        // ==================== ::b ====================
+        
+        function openAirportPanel(iata) {
+            const airport = AIRPORT_GCJ.find(function (a) {
+                return a.iata === iata;
+            });
+        
+            if (!airport) return;
+        
+            // sÌÂ::·
+            if (airport._hotzone) airport._hotzone.closePopup();
+        
+            const throughputStr = airport.throughput.toLocaleString('en-US');
+            const indexStr = airport.passengerIndex.toFixed(1);
+            const altitudeStr = airport.isPlateau ? 'ÿü' : '^ÿü';
+        
+            const body = document.getElementById('airport-panel-body');
+        
+            body.innerHTML =
+                '<div class="ap-panel-header">' +
+                    '<div class="ap-panel-name">' + airport.name + '</div>' +
+                    '<div class="ap-panel-code">' + airport.iata + '</div>' +
+                '</div>' +
+        
+                '<div class="ap-panel-grid">' +
+                    '<div class="ap-panel-item">' +
+                        '<div class="ap-panel-label">t≈¢œ</div>' +
+                        '<div class="ap-panel-value">' + throughputStr +
+                            '<span class="unit">∫!</span>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="ap-panel-item">' +
+                        '<div class="ap-panel-label">ﬁL:Iß</div>' +
+                        '<div class="ap-panel-value">' + airport.grade + '</div>' +
+                    '</div>' +
+                    '<div class="ap-panel-item">' +
+                        '<div class="ap-panel-label">›:</div>' +
+                        '<div class="ap-panel-value">' + airport.distance +
+                            '<span class="unit">km</span>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="ap-panel-item">' +
+                        '<div class="ap-panel-label">w‘{ã</div>' +
+                        '<div class="ap-panel-value">' + altitudeStr + '</div>' +
+                    '</div>' +
+                '</div>' +
+        
+                '<div class="ap-panel-index">' +
+                    '<div class="ap-panel-index-label">X¢p</div>' +
+                    '<div class="ap-panel-index-value">' + indexStr + '</div>' +
+                '</div>';
+        
+            openOverlay('airport-panel-overlay');
+        }
+        
+        function closeAirportPanel() {
+            closeOverlay('airport-panel-overlay');
+        }
+        
+        // ==================== :h2” ====================
+        
+        function renderFleet() {
+            const list = document.getElementById('fleet-list');
+        
+            if (gameState.fleet.length === 0) {
+                list.innerHTML = '<div class="fleet-empty">Ç‡ﬁ:πÛ
+“«-</div>';
+                return;
+            }
+        
+            let html = '';
+            gameState.fleet.forEach(function (plane) {
+                const data = Object.values(AIRCRAFT_DATA).find(function (d) {
+                    return d.shortName === plane.type;
+                }) || AIRCRAFT_DATA.A320neo;
+        
+                html +=
+                    '<div class="fleet-card">' +
+                        '<div class="fc-top">' +
+                            '<span class="fc-name">' + plane.name + '</span>' +
+                            '<span class="fc-status">Ún</span>' +
+                        '</div>' +
+                        '<div class="fc-info">' +
+                            data.displayName + ' ∑ ' + data.seatCapacity + ' ß' +
+                        '</div>' +
+                        '<div class="fc-actions">' +
+                            '<button class="fleet-btn schedule" onclick="fleetSchedule(this)">ˆ;h</button>' +
+                            '<button class="fleet-btn sell" onclick="fleetSell(this)">˙.</button>' +
+                        '</div>' +
+                    '</div>';
+            });
+            list.innerHTML = html;
+        }
+        
+        function fleetSchedule(btn) {
+            if (btn.classList.contains('pressed')) return;
+            btn.classList.add('pressed');
+            setTimeout(function () {
+                btn.classList.remove('pressed');
+            }, 200);
+        }
+        
+        function fleetSell(btn) {
+            if (btn.classList.contains('pressed')) return;
+            btn.classList.add('pressed');
+            setTimeout(function () {
+                btn.classList.remove('pressed');
+            }, 200);
+        }
+        
+        // ==================== 9ó° ====================
+        
+        function openOverlay(id) {
+            const el = document.getElementById(id);
+            el.style.zIndex = overlayZCounter++;
+            el.classList.add('active');
+            refreshOverlayDim();
+        }
+        
+        function closeOverlay(id) {
+            document.getElementById(id).classList.remove('active');
+            refreshOverlayDim();
+        }
+        
+        function refreshOverlayDim() {
+            const actives = Array.prototype.slice.call(
+                document.querySelectorAll('.overlay.active')
+            );
+        
+            actives.sort(function (a, b) {
+                return (parseInt(a.style.zIndex) || 0) - (parseInt(b.style.zIndex) || 0);
+            });
+        
+            actives.forEach(function (el, idx) {
+                if (idx === 0) {
+                    el.classList.remove('no-dim');
+                } else {
+                    el.classList.add('no-dim');
+                }
+            });
+        }
+        
+        // ==================== 'ø ====================
+        
+        function makeArc(a, b, segments) {
+            segments = segments || 60;
+            const dLat = b.lat - a.lat;
+            const dLng = b.lng - a.lng;
+            const dist = Math.sqrt(dLat * dLat + dLng * dLng) || 1;
+        
+            const perpLat = -dLng / dist;
+            const perpLng = dLat / dist;
+            const bulge = dist * 0.22;
+        
+            const ctrlLat = (a.lat + b.lat) / 2 + perpLat * bulge;
+            const ctrlLng = (a.lng + b.lng) / 2 + perpLng * bulge;
+        
+            const pts = [];
+            for (let i = 0; i <= segments; i++) {
+                const t = i / segments;
+                const it = 1 - t;
+                const lat = it * it * a.lat + 2 * it * t * ctrlLat + t * t * b.lat;
+                const lng = it * it * a.lng + 2 * it * t * ctrlLng + t * t * b.lng;
+                pts.push([lat, lng]);
+            }
+            return pts;
+        }
+        
+        // ==================== ﬁ:˛ ====================
+        
+        const PLANE_SVG_PATH = "M12 1 L13.5 9 L21 14 L21 15.5 L13.5 13 L13 18 L15 20 L15 21 L12 20 L9 21 L9 20 L11 18 L10.5 13 L3 15.5 L3 14 L10.5 9 Z";
+        const PLANE_ICON_SIZE = 32;
+        
+        function makePlaneIcon() {
+            return L.divIcon({
+                className: 'plane-marker',
+                html: '<div class="plane-rot">' +
+                        '<svg viewBox="0 0 24 24" width="' + PLANE_ICON_SIZE + '" height="' + PLANE_ICON_SIZE + '">' +
+                            '<path fill="#2563eb" d="' + PLANE_SVG_PATH + '"/>' +
+                        '</svg>' +
+                      '</div>',
+                iconSize: [PLANE_ICON_SIZE, PLANE_ICON_SIZE],
+                iconAnchor: [PLANE_ICON_SIZE / 2, PLANE_ICON_SIZE / 2]
+            });
+        }
+        
+        // ==================== /®uÃo0˛ ====================
+        
+        let bgMap = null;
+        let bgAnimating = false;
+        let bgPlanes = [];
+        let bgShift = 0;
+        
+        function initBackgroundMap() {
+            const container = document.getElementById('bg-map');
+            if (!container || bgMap) return;
+        
+            bgMap = L.map('bg-map', {
+                center: [35.0, 105.0],
+                zoom: 5,
+                minZoom: 5,
+                maxZoom: 5,
+                zoomControl: false,
+                attributionControl: false,
+                dragging: false,
+                scrollWheelZoom: false,
+                doubleClickZoom: false,
+                boxZoom: false,
+                keyboard: false,
+                touchZoom: false,
+                tap: false,
+                worldCopyJump: false,
+                maxBounds: [[-85, -180], [85, 180]],
+                maxBoundsViscosity: 0.8
+            });
+        
+            L.tileLayer(
+                'https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}',
+                {
+                    subdomains: '1234',
+                    minZoom: 5,
+                    maxZoom: 5,
+                    noWrap: true
+                }
+            ).addTo(bgMap);
+        
+            bgMap.invalidateSize();
+        
+            AIRPORT_GCJ.forEach(function (a) {
+                L.circleMarker([a.lat, a.lng], {
+                    radius: 3.5,
+                    fillColor: '#1a3a5c',
+                    color: '#ffffff',
+                    weight: 1,
+                    fillOpacity: 1,
+                    interactive: false
+                }).addTo(bgMap);
+            });
+        
+            DEMO_ROUTES.forEach(function (pair, idx) {
+                const a = AIRPORT_GCJ[pair[0]];
+                const b = AIRPORT_GCJ[pair[1]];
+                const pts = makeArc(a, b, 60);
+        
+                L.polyline(pts, {
+                    color: '#2563eb',
+                    weight: 1.5,
+                    opacity: 0.55,
+                    interactive: false
+                }).addTo(bgMap);
+        
+                const marker = L.marker(pts[0], {
+                    icon: makePlaneIcon(),
+                    interactive: false
+                }).addTo(bgMap);
+        
+                bgPlanes.push({
+                    marker: marker,
+                    points: pts,
+                    progress: idx * 0.25,
+                    speed: 0.0015 + Math.random() * 0.0008,
+                    lastAngle: null
+                });
+            });
+        
+            bgAnimating = true;
+            requestAnimationFrame(bgLoop);
+        }
+        
+        function bgLoop() {
+            if (!bgAnimating || !bgMap) return;
+        
+            bgShift += 0.0018;
+            const RADIUS_LNG = 9;
+            const RADIUS_LAT = 5;
+            const lngOffset = Math.cos(bgShift) * RADIUS_LNG;
+            const latOffset = Math.sin(bgShift) * RADIUS_LAT;
+            bgMap.setView([35.0 + latOffset, 105.0 + lngOffset], 5, { animate: false });
+        
+            bgPlanes.forEach(function (p) {
+                p.progress += p.speed;
+                if (p.progress > 1) p.progress = 0;
+        
+                const idx = p.progress * (p.points.length - 1);
+                const i0 = Math.floor(idx);
+                const i1 = Math.min(i0 + 1, p.points.length - 1);
+                const frac = idx - i0;
+        
+                const lat = p.points[i0][0] + (p.points[i1][0] - p.points[i0][0]) * frac;
+                const lng = p.points[i0][1] + (p.points[i1][1] - p.points[i0][1]) * frac;
+        
+                p.marker.setLatLng([lat, lng]);
+        
+                const dLat = p.points[i1][0] - p.points[i0][0];
+                const dLng = p.points[i1][1] - p.points[i0][1];
+        
+                let angle = Math.atan2(-dLat, dLng) * 180 / PI;
+                angle += 90;
+        
+                if (p.lastAngle !== null) {
+                    while (angle - p.lastAngle > 180) angle -= 360;
+                    while (angle - p.lastAngle < -180) angle += 360;
+                }
+                p.lastAngle = angle;
+        
+                const el = p.marker.getElement();
+                if (el) {
+                    const rot = el.querySelector('.plane-rot');
+                    if (rot) {
+                        rot.style.transform = 'rotate(' + angle + 'deg)';
+                    }
+                }
+            });
+        
+            requestAnimationFrame(bgLoop);
+        }
+        
+        // ==================== 8u0˛ ====================
+        
+        let gameMap = null;
+        
+        function initGameMap() {
+            if (gameMap) return gameMap;
+        
+            gameMap = L.map('map', {
+                center: [35.0, 105.0],
+                zoom: 4,
+                minZoom: 3,
+                maxZoom: 18,
+                zoomControl: false,
+                attributionControl: true,
+                tap: true,
+                touchZoom: true,
+                worldCopyJump: false,
+                maxBounds: [[-85, -180], [85, 180]],
+                maxBoundsViscosity: 0.8
+            });
+        
+            L.tileLayer(
+                'https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}',
+                {
+                    subdomains: '1234',
+                    attribution: '&copy; ÿ∑0˛',
+                    minZoom: 3,
+                    maxZoom: 18,
+                    noWrap: true
+                }
+            ).addTo(gameMap);
+        
+            L.control.zoom({ position: 'bottomright' }).addTo(gameMap);
+        
+            renderAirports(gameMap);
+        
+            // s.π˚0˛z}sÌ@	· + ∂
+            gameMap.on('click', function () {
+                closeAllPopupsAndClearState();
+            });
+        
+            return gameMap;
+        }
+        
+        // sÌ@	·	-∂
+        function closeAllPopupsAndClearState() {
+            AIRPORT_GCJ.forEach(function (a) {
+                if (a._hotzone) {
+                    try { a._hotzone.closePopup(); } catch (e) {}
+                }
+            });
+        
+            //  pending, !π˚*n§	
+            if (pendingAirport) {
+                pendingAirport = null;
+            }
+        
+            //  selectedÚn§wπ	
+            if (selectedAirport) {
+                setAirportSelected(selectedAirport, false);
+                selectedAirport = null;
+            }
+        }
+        
+        function renderAirports(map) {
+            AIRPORT_GCJ.forEach(function (airport) {
+                const latlng = [airport.lat, airport.lng];
+        
+                const dot = L.circleMarker(latlng, {
+                    radius: 5,
+                    fillColor: '#555555',
+                    color: '#ffffff',
+                    weight: 1.5,
+                    opacity: 1,
+                    fillOpacity: 1,
+                    interactive: false
+                }).addTo(map);
+        
+                const hotzone = L.circleMarker(latlng, {
+                    radius: 16,
+                    fillColor: '#000000',
+                    fillOpacity: 0,
+                    stroke: false,
+                    interactive: true
+                }).addTo(map);
+        
+                hotzone.bindPopup(
+                    '<div style="font-size:13px;line-height:1.5;">' +
+                        '<div style="font-weight:bold;margin-bottom:6px;">' +
+                            '<b>' + airport.iata + '</b> ∑ ' + airport.name +
+                        '</div>' +
+                        '<div style="display:flex;align-items:center;gap:10px;">' +
+                            '<span style="color:#666;">' + airport.city + '</span>' +
+                            '<button class="ap-panel-btn" onclick="openAirportPanel(\'' + airport.iata + '\')">b &gt;</button>' +
+                        '</div>' +
+                    '</div>',
+                    {
+                        closeButton: false,
+                        autoClose: false,
+                        closeOnClick: false,
+                        offset: [0, -8],
+                        maxWidth: 260
+                    }
+                );
+        
+                airport._dot = dot;
+                airport._hotzone = hotzone;
+        
+                // π˚::ˆ;bãˆí·00˛MÊ— map Ñ click
+                hotzone.on('click', function (e) {
+                    L.DomEvent.stopPropagation(e);
+                    handleAirportClick(airport);
+                });
+            });
+        }
+        
+        // ==================== §í ====================
+        
+        function enterGame(btn) {
+            if (btn.classList.contains('pressed')) return;
+            btn.classList.add('pressed');
+        
+            setTimeout(function () {
+                bgAnimating = false;
+        
+                document.getElementById('start-page').style.display = 'none';
+                document.getElementById('game-page').classList.add('active');
+        
+                updateMoneyDisplay();
+                renderFleet();
+        
+                setTimeout(function () {
+                    initGameMap();
+                    if (gameMap) gameMap.invalidateSize();
+                }, 100);
+            }, 200);
+        }
+        
+        function openAbout(btn) {
+            if (btn.classList.contains('pressed')) return;
+            btn.classList.add('pressed');
+        
+            setTimeout(function () {
+                btn.classList.remove('pressed');
+                document.getElementById('about-page').classList.add('active');
+            }, 200);
+        }
+        
+        function closeAbout(btn) {
+            if (btn.classList.contains('pressed')) return;
+            btn.classList.add('pressed');
+        
+            setTimeout(function () {
+                btn.classList.remove('pressed');
+                document.getElementById('about-page').classList.remove('active');
+            }, 200);
+        }
+        
+        function switchTab(tabEl, contentId) {
+            document.querySelectorAll('.right-panel .tab').forEach(function (t) {
+                t.classList.remove('active');
+            });
+            tabEl.classList.add('active');
+        
+            document.querySelectorAll('.right-panel .panel-content').forEach(function (p) {
+                p.classList.remove('active');
+            });
+            document.getElementById(contentId).classList.add('active');
+        }
+        
+        function openBuyModal(btn) {
+            if (btn.classList.contains('pressed')) return;
+            btn.classList.add('pressed');
+        
+            setTimeout(function () {
+                btn.classList.remove('pressed');
+        
+                const price = AIRCRAFT_DATA.A320neo.newPrice;
+                const buyBtn = document.getElementById('pc-buy-btn');
+        
+                if (gameState.money < price) {
+                    buyBtn.disabled = true;
+                    buyBtn.textContent = 'D—≥';
+                } else {
+                    buyBtn.disabled = false;
+                    buyBtn.textContent = '-p';
+                }
+        
+                openOverlay('buy-overlay');
+            }, 200);
+        }
+        
+        function closeBuyModal() {
+            closeOverlay('buy-overlay');
+        }
+        
+        function buyPlane(btn) {
+            if (btn.disabled) return;
+        
+            const price = AIRCRAFT_DATA.A320neo.newPrice;
+        
+            if (gameState.money < price) {
+                showToast('D—≥');
+                return;
+            }
+        
+            if (btn.classList.contains('pressed')) return;
+            btn.classList.add('pressed');
+        
+            setTimeout(function () {
+                btn.classList.remove('pressed');
+        
+                const type = AIRCRAFT_DATA.A320neo.shortName;
+                const nextSeq = countFleetByType(type) + 1;
+                const seq = String(nextSeq).padStart(4, '0');
+                const defaultName = type + '-' + seq;
+        
+                const input = document.getElementById('naming-input');
+                input.value = defaultName;
+        
+                openOverlay('naming-overlay');
+        
+                setTimeout(function () {
+                    input.focus();
+                    input.select();
+                }, 100);
+            }, 200);
+        }
+        
+        function closeNamingModal() {
+            closeOverlay('naming-overlay');
+        }
+        
+        function confirmBuy(btn) {
+            if (btn.classList.contains('pressed')) return;
+            btn.classList.add('pressed');
+        
+            setTimeout(function () {
+                btn.classList.remove('pressed');
+        
+                const price = AIRCRAFT_DATA.A320neo.newPrice;
+        
+                if (gameState.money < price) {
+                    showToast('D—≥');
+                    closeNamingModal();
+                    return;
+                }
+        
+                const type = AIRCRAFT_DATA.A320neo.shortName;
+                const input = document.getElementById('naming-input');
+                let finalName = input.value.trim();
+        
+                if (!finalName) {
+                    const nextSeq = countFleetByType(type) + 1;
+                    finalName = type + '-' + String(nextSeq).padStart(4, '0');
+                }
+        
+                gameState.money -= price;
+                gameState.fleet.push({ name: finalName, type: type });
+        
+                updateMoneyDisplay();
+                renderFleet();
+        
+                closeNamingModal();
+                closeBuyModal();
+        
+                showToast('Ú-p ' + finalName);
+            }, 200);
+        }
+        
+        let toastTimer = null;
+        function showToast(text) {
+            const toast = document.getElementById('toast');
+            toast.textContent = text;
+            toast.classList.add('show');
+        
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(function () {
+                toast.classList.remove('show');
+            }, 2000);
+        }
+        
+        // ==================== À ====================
+        
+        function boot() {
+            try {
+                initBackgroundMap();
+            } catch (e) {
+                console.error('Ão0˛À1%:', e);
+            }
+        
+            window.addEventListener('resize', function () {
+                try {
+                    if (bgMap) bgMap.invalidateSize();
+                    if (gameMap) gameMap.invalidateSize();
+                } catch (e) {}
+            });
+        }
+        
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function () {
+                setTimeout(boot, 100);
+            });
+        } else {
+            setTimeout(boot, 100);
+        }
+    </script>
+
+</body>
+
+</html>
