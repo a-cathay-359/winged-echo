@@ -55,17 +55,16 @@
     <div id="about-page">
         <button class="back-btn" onclick="closeAbout(this)">←</button>
         <div class="about-center">
-            <div class="about-copyright">© 2026 a_cathay_359</div>
+            <div class="about-copyright">© 2026 a-cathay-359</div>
         </div>
     </div>
 
     <div id="game-page">
         <div class="top-bar">
-            <div class="top-logo">
+            <div class="top-logo" id="top-logo">
                 <svg class="top-logo-icon" width="48" height="48"><use href="#we-logo"/></svg>
                 <span>翼掠惊鸿</span>
             </div>
-            <button class="top-edit">修改</button>
             <div class="top-money">
                 <span class="money-icon">¥</span>
                 <span class="money-value" id="money-value">10.00</span>
@@ -75,7 +74,48 @@
         </div>
 
         <div class="main-body">
-            <div class="left-panel"></div>
+            <div class="left-panel">
+                <div class="lp-card">
+                    <div class="lp-logo">
+                        <svg width="44" height="44"><use href="#we-logo"/></svg>
+                    </div>
+                    <div class="lp-name" id="lp-name" onclick="openAirlineEdit()">翼掠航空</div>
+                    <div class="lp-name-en" id="lp-name-en">WINGED AIR</div>
+                    <div class="lp-code" id="lp-code">WE</div>
+                </div>
+
+                <div class="lp-section">
+                    <div class="lp-section-title">运营概况</div>
+                    <div class="lp-row">
+                        <span>机队</span>
+                        <span class="lp-val" id="lp-fleet">0 架</span>
+                    </div>
+                    <div class="lp-row">
+                        <span>航线</span>
+                        <span class="lp-val" id="lp-routes">0 条</span>
+                    </div>
+                    <div class="lp-row">
+                        <span>运营中</span>
+                        <span class="lp-val blue" id="lp-active">0 架</span>
+                    </div>
+                    <div class="lp-row">
+                        <span>声誉</span>
+                        <span class="lp-val rep-yellow" id="lp-reputation">50.00%</span>
+                    </div>
+                </div>
+
+                <div class="lp-section">
+                    <div class="lp-section-title">今日</div>
+                    <div class="lp-row">
+                        <span>航班</span>
+                        <span class="lp-val" id="lp-today-flights">0 班</span>
+                    </div>
+                    <div class="lp-row">
+                        <span>收入</span>
+                        <span class="lp-val green" id="lp-today-revenue">¥0</span>
+                    </div>
+                </div>
+            </div>
 
             <div class="main-area">
                 <div id="map"></div>
@@ -96,19 +136,7 @@
                             <span class="modal-close" onclick="closeBuyModal()">✕</span>
                         </div>
                         <div class="modal-body">
-                            <div class="plane-card">
-                                <div class="pc-name">空客 A320neo (LEAP-1A)</div>
-                                <div class="pc-price">¥ 4.3 亿</div>
-                                <div class="pc-stats">
-                                    <span>🛫 巡航速度：850 km/h</span>
-                                    <span>📏 航程：6200 km</span>
-                                    <span>⚖️ 最大起飞重量：79 吨</span>
-                                    <span>📦 最大载重：17 吨</span>
-                                    <span>⛽ 燃油容量：26000 升</span>
-                                    <span>🔥 巡航油耗：2.94 升/千米</span>
-                                </div>
-                                <button class="pc-buy" id="pc-buy-btn" onclick="buyPlane(this)">购买</button>
-                            </div>
+                            <div id="buy-list"></div>
                         </div>
                     </div>
                 </div>
@@ -132,7 +160,7 @@
                                 </div>
                             </div>
                             <div class="route-demand" id="route-demand"></div>
-                            <button class="route-create-btn" onclick="confirmRoute(this)">+ 建立</button>
+                            <button class="route-create-btn" id="route-create-btn" onclick="confirmRoute(this)">+ 建立</button>
                         </div>
                     </div>
                 </div>
@@ -160,6 +188,68 @@
                     </div>
                 </div>
 
+                <div id="route-picker-overlay" class="overlay" onclick="onRoutePickerOverlayClick(event)">
+                    <div class="buy-modal">
+                        <div class="modal-header">
+                            <span>建立航线</span>
+                            <span class="modal-close" onclick="closeRoutePicker()">✕</span>
+                        </div>
+                        <div class="modal-body">
+                            <div class="picker-row">
+                                <div class="picker-field">
+                                    <label class="naming-label">出发机场</label>
+                                    <div class="custom-select">
+                                        <div class="cs-trigger" id="rp-from-trigger" onclick="toggleRoutePickerDropdown('from', event)">
+                                            <span class="cs-value cs-placeholder" id="rp-from-value">请选择</span>
+                                            <svg class="cs-arrow" viewBox="0 0 10 6"><path d="M0 0 L5 6 L10 0 Z" fill="#94a3b8"/></svg>
+                                        </div>
+                                        <div class="cs-list" id="rp-from-list"></div>
+                                    </div>
+                                </div>
+
+                                <div class="picker-arrow">→</div>
+
+                                <div class="picker-field">
+                                    <label class="naming-label">到达机场</label>
+                                    <div class="custom-select">
+                                        <div class="cs-trigger" id="rp-to-trigger" onclick="toggleRoutePickerDropdown('to', event)">
+                                            <span class="cs-value cs-placeholder" id="rp-to-value">请选择</span>
+                                            <svg class="cs-arrow" viewBox="0 0 10 6"><path d="M0 0 L5 6 L10 0 Z" fill="#94a3b8"/></svg>
+                                        </div>
+                                        <div class="cs-list" id="rp-to-list"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button class="naming-confirm" id="rp-next-btn" onclick="routePickerNext(this)" disabled>下一步</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="route-tab-demand-overlay" class="overlay" onclick="if(event.target===this) closeRouteTabDemand()">
+                    <div class="buy-modal">
+                        <div class="modal-header">
+                            <span>建立航线</span>
+                            <span class="modal-close" onclick="closeRouteTabDemand()">✕</span>
+                        </div>
+                        <div class="modal-body route-modal-body">
+                            <div class="route-info">
+                                <div class="route-ap">
+                                    <div class="route-ap-name" id="rt-from-name">—</div>
+                                    <div class="route-ap-iata" id="rt-from-iata">—</div>
+                                </div>
+                                <div class="route-arrow">→</div>
+                                <div class="route-ap">
+                                    <div class="route-ap-name" id="rt-to-name">—</div>
+                                    <div class="route-ap-iata" id="rt-to-iata">—</div>
+                                </div>
+                            </div>
+                            <div class="route-demand" id="rt-demand"></div>
+                            <button class="route-create-btn" id="rt-create-btn" onclick="confirmRouteTabCreate(this)">+ 建立</button>
+                        </div>
+                    </div>
+                </div>
+
                 <div id="naming-overlay" class="overlay" onclick="onNamingOverlayClick(event)">
                     <div class="buy-modal naming-modal">
                         <div class="modal-header">
@@ -168,12 +258,16 @@
                         </div>
                         <div class="modal-body">
                             <div class="naming-form">
+                                <div class="plane-info" style="margin-bottom:14px;">
+                                    <div class="pi-line"><span>机型</span><b id="naming-aircraft-type">—</b></div>
+                                </div>
+
                                 <label class="naming-label">飞机名称</label>
                                 <input
                                     type="text"
                                     id="naming-input"
                                     class="naming-input"
-                                    value="A320neo-0001"
+                                    value=""
                                     spellcheck="false"
                                     autocomplete="off"
                                 >
@@ -193,6 +287,32 @@
                     </div>
                 </div>
 
+                <div id="airline-edit-overlay" class="overlay" onclick="if(event.target===this) closeAirlineEdit()">
+                    <div class="buy-modal airline-modal">
+                        <div class="modal-header">
+                            <span>修改航司信息</span>
+                            <span class="modal-close" onclick="closeAirlineEdit()">✕</span>
+                        </div>
+                        <div class="modal-body">
+                            <div class="naming-form">
+                                <label class="naming-label">航司名称</label>
+                                <input type="text" id="ae-name" class="naming-input" maxlength="8" spellcheck="false" autocomplete="off">
+                                <div class="hint" id="ae-hint-name">1 ~ 8 个字</div>
+
+                                <label class="naming-label naming-label-second">英文名称（可选）</label>
+                                <input type="text" id="ae-name-en" class="naming-input" maxlength="20" spellcheck="false" autocomplete="off">
+                                <div class="hint" id="ae-hint-name-en">0 ~ 20 个字符</div>
+
+                                <label class="naming-label naming-label-second">二字码</label>
+                                <input type="text" id="ae-code" class="naming-input ae-code-input" maxlength="2" spellcheck="false" autocomplete="off">
+                                <div class="hint" id="ae-hint-code">第一位：数字或字母 · 第二位：字母</div>
+
+                                <button class="naming-confirm" id="ae-save-btn" onclick="saveAirlineEdit(this)">保存</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div id="airport-panel-overlay" class="overlay" onclick="if(event.target===this) closeAirportPanel()">
                     <div class="buy-modal">
                         <div class="modal-header">
@@ -200,6 +320,22 @@
                             <span class="modal-close" onclick="closeAirportPanel()">✕</span>
                         </div>
                         <div class="modal-body" id="airport-panel-body"></div>
+                    </div>
+                </div>
+
+                <div id="plane-detail-overlay" class="overlay" onclick="if(event.target===this) closePlaneDetail()">
+                    <div class="buy-modal">
+                        <div class="modal-header">
+                            <span>飞机详情</span>
+                            <span class="modal-close" onclick="closePlaneDetail()">✕</span>
+                        </div>
+                        <div class="modal-body">
+                            <div class="pd-head">
+                                <div class="pd-name" id="pd-name">—</div>
+                                <div class="pd-sub" id="pd-sub">—</div>
+                            </div>
+                            <div id="pd-content"></div>
+                        </div>
                     </div>
                 </div>
 
@@ -229,6 +365,10 @@
                             <input class="flights-input" id="sch-flights-input" type="number" min="1" step="1" value="1" oninput="updateScheduleUI()">
                             <div class="hint" id="sch-hint">请先选择航线</div>
 
+                            <label class="form-label form-label-second">首班起飞时间</label>
+                            <input class="flights-input" id="sch-firstdep-input" type="text" maxlength="5" placeholder="00:00" value="00:00" oninput="updateScheduleUI()">
+                            <div class="hint" id="sch-firstdep-hint">格式 HH:MM</div>
+
                             <div class="duration-info">
                                 <div class="di-line"><span>单程飞行</span><b id="sch-di-flight">—</b></div>
                                 <div class="di-line"><span>两端周转</span><b id="sch-di-turn">—</b></div>
@@ -245,21 +385,69 @@
                     </div>
                 </div>
 
-                <div id="load-confirm-overlay" class="overlay" onclick="if(event.target===this) closeLoadConfirm()">
+                <div id="return-title-overlay" class="overlay" onclick="if(event.target===this) closeReturnTitle()">
                     <div class="buy-modal confirm-modal">
                         <div class="modal-header">
-                            <span>读取存档</span>
-                            <span class="modal-close" onclick="closeLoadConfirm()">✕</span>
+                            <span>返回标题</span>
+                            <span class="modal-close" onclick="closeReturnTitle()">✕</span>
                         </div>
                         <div class="modal-body">
-                            <div class="confirm-text">读取存档将覆盖当前进度，确定继续？</div>
+                            <div class="confirm-text">返回标题将丢失当前进度，未存档的内容无法恢复。确定继续？</div>
                             <div class="confirm-actions">
-                                <button class="confirm-btn cancel" onclick="closeLoadConfirm()">取消</button>
-                                <button class="confirm-btn ok" onclick="confirmLoad()">确认读档</button>
+                                <button class="confirm-btn cancel" onclick="closeReturnTitle()">取消</button>
+                                <button class="confirm-btn ok" onclick="confirmReturnTitle()">确认返回</button>
                             </div>
                         </div>
                     </div>
                 </div>
+
+                <div id="admin-pass-overlay" class="overlay" onclick="if(event.target===this) closeAdminPass()">
+                    <div class="buy-modal admin-modal">
+                        <div class="modal-header">
+                            <span>管理员验证</span>
+                            <span class="modal-close" onclick="closeAdminPass()">✕</span>
+                        </div>
+                        <div class="modal-body">
+                            <div class="naming-form">
+                                <label class="naming-label">请输入管理员密码</label>
+                                <input
+                                    type="password"
+                                    id="admin-pass-input"
+                                    class="naming-input"
+                                    spellcheck="false"
+                                    autocomplete="off"
+                                >
+                                <button class="naming-confirm" id="admin-pass-btn" onclick="submitAdminPass(this)">确认</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="admin-money-overlay" class="overlay" onclick="if(event.target===this) closeAdminMoney()">
+                    <div class="buy-modal admin-modal">
+                        <div class="modal-header">
+                            <span>调试 · 设置资金</span>
+                            <span class="modal-close" onclick="closeAdminMoney()">✕</span>
+                        </div>
+                        <div class="modal-body">
+                            <div class="naming-form">
+                                <label class="naming-label">当前资金：<b id="admin-current-money">10.00</b> 亿</label>
+                                <label class="naming-label naming-label-second">新资金（亿）</label>
+                                <input
+                                    type="number"
+                                    id="admin-money-input"
+                                    class="naming-input"
+                                    step="0.01"
+                                    min="0"
+                                    spellcheck="false"
+                                    autocomplete="off"
+                                >
+                                <button class="naming-confirm" id="admin-money-btn" onclick="submitAdminMoney(this)">保存</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             </div>
 
             <div class="right-panel">
@@ -280,9 +468,20 @@
                     <div id="fleet-list"></div>
                 </div>
 
-                <div id="tab-route" class="panel-content"></div>
+                <div id="tab-route" class="panel-content">
+                    <div class="plane-panel-header">
+                        <span class="plane-panel-title">航线列表</span>
+                        <button class="buy-plane-btn-small" onclick="openRoutePicker()">+ 建立航线</button>
+                    </div>
+                    <div id="route-tab-list"></div>
+                </div>
 
-                <div id="tab-airport" class="panel-content"></div>
+                <div id="tab-airport" class="panel-content">
+                    <div class="plane-panel-header">
+                        <span class="plane-panel-title">机场列表</span>
+                    </div>
+                    <div id="airport-tab-list"></div>
+                </div>
             </div>
         </div>
 
@@ -300,13 +499,96 @@
 
             <div class="bottom-spacer"></div>
             <button class="save-btn" onclick="saveGame()">💾 存档</button>
-            <button class="save-btn" onclick="openLoadConfirm()">📁 读档</button>
+            <button class="save-btn" onclick="openSaveList()">📁 读档</button>
+        </div>
+    </div>
+
+    <!-- ========== 存档系统弹窗（独立于 game-page，启动页也能弹） ========== -->
+
+    <div id="save-list-overlay" class="overlay overlay--full" onclick="if(event.target===this) closeSaveList()">
+        <div class="buy-modal">
+            <div class="modal-header">
+                <span>读取存档</span>
+                <span class="modal-close" onclick="closeSaveList()">✕</span>
+            </div>
+            <div class="modal-body" id="save-list-body"></div>
+        </div>
+    </div>
+
+    <div id="save-naming-overlay" class="overlay overlay--full" onclick="if(event.target===this) closeSaveNaming()">
+        <div class="buy-modal naming-modal">
+            <div class="modal-header">
+                <span>命名存档</span>
+                <span class="modal-close" onclick="closeSaveNaming()">✕</span>
+            </div>
+            <div class="modal-body">
+                <div class="naming-form">
+                    <label class="naming-label">存档名称</label>
+                    <input
+                        type="text"
+                        id="save-naming-input"
+                        class="naming-input"
+                        maxlength="12"
+                        spellcheck="false"
+                        autocomplete="off"
+                    >
+                    <div class="hint" id="save-naming-hint">1 ~ 12 个字，不可重复</div>
+
+                    <button class="naming-confirm" id="save-naming-confirm-btn" onclick="confirmSaveNaming(this)" disabled>确认存档</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="save-del-confirm-overlay" class="overlay overlay--full" onclick="if(event.target===this) closeDelConfirm()">
+        <div class="buy-modal confirm-modal">
+            <div class="modal-header">
+                <span>确认删除</span>
+                <span class="modal-close" onclick="closeDelConfirm()">✕</span>
+            </div>
+            <div class="modal-body">
+                <div class="confirm-text">
+                    确定要删除存档 <b id="del-confirm-name">—</b> 吗？<br>
+                    此操作不可恢复。
+                </div>
+                <div class="confirm-actions">
+                    <button class="confirm-btn cancel" onclick="closeDelConfirm()">取消</button>
+                    <button class="confirm-btn ok" onclick="goDelVerify()">删除</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="save-del-verify-overlay" class="overlay overlay--full" onclick="if(event.target===this) closeDelVerify()">
+        <div class="buy-modal save-del-verify-modal">
+            <div class="modal-header">
+                <span>安全验证</span>
+                <span class="modal-close" onclick="closeDelVerify()">✕</span>
+            </div>
+            <div class="modal-body">
+                <div class="confirm-text">请输入该存档的资金金额以确认删除。</div>
+
+                <div class="del-money-info">
+                    <span class="label">该存档资金</span>
+                    <span class="value" id="del-verify-money">10.00<span class="unit">亿</span></span>
+                </div>
+
+                <label class="del-label">输入金额（亿）</label>
+                <input type="text" class="del-input" id="del-verify-input" autocomplete="off" spellcheck="false">
+                <div class="del-hint" id="del-verify-hint"></div>
+
+                <div class="confirm-actions" style="margin-top:16px;">
+                    <button class="confirm-btn cancel" onclick="closeDelVerify()">取消</button>
+                    <button class="confirm-btn ok" onclick="confirmDelSave()">确认删除</button>
+                </div>
+            </div>
         </div>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="data.js"></script>
     <script src="game.js"></script>
+    <script src="world.js"></script>
 
 </body>
 </html>

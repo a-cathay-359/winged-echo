@@ -142,8 +142,7 @@ body {
 .fleet-btn.pressed,
 .route-create-btn.pressed,
 .ap-panel-btn.pressed,
-.confirm-btn.pressed,
-.cs-item.pressed {
+.confirm-btn.pressed {
     animation: jellyPress 0.2s ease-out;
 }
 
@@ -270,6 +269,7 @@ body {
     align-items: center;
     gap: 3px;
     white-space: nowrap;
+    cursor: default;
 }
 
 .top-logo-icon {
@@ -278,23 +278,14 @@ body {
     transform: translateY(3px);
 }
 
-.top-edit {
-    background: rgba(255,255,255,0.15);
-    border: 1px solid rgba(255,255,255,0.35);
-    color: white;
-    padding: 2px 10px;
-    border-radius: 4px;
-    font-size: 12px;
-    cursor: pointer;
-    white-space: nowrap;
-}
-
 .top-money {
     display: flex;
     align-items: baseline;
     gap: 6px;
     margin-left: 4px;
     white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
 }
 
 .top-money .money-icon {
@@ -334,15 +325,118 @@ body {
     min-height: 0;
 }
 
+/* ========== 左侧面板 ========== */
 .left-panel {
     width: 16vw;
-    min-width: 150px;
+    min-width: 180px;
+    max-width: 240px;
     background: #ffffff;
     border-right: 1px solid #c0d4e8;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    overflow-y: auto;
     flex-shrink: 0;
+}
+
+.left-panel::-webkit-scrollbar { width: 6px; }
+.left-panel::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+}
+
+.lp-card {
+    padding: 22px 16px 18px;
+    text-align: center;
+    border-bottom: 1px solid #eef2f7;
+}
+
+.lp-logo {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 12px;
+    background: #0d2b4e;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.lp-name {
+    font-size: 17px;
+    font-weight: bold;
+    color: #1e293b;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: background 0.15s;
+    word-break: break-all;
+}
+
+.lp-name:hover {
+    background: #f1f5f9;
+}
+
+.lp-name-en {
+    font-size: 11px;
+    color: #94a3b8;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    word-break: break-all;
+}
+
+.lp-code {
+    display: inline-block;
+    font-size: 12px;
+    font-weight: bold;
+    color: #2b5ce6;
+    letter-spacing: 3px;
+    padding: 3px 10px 3px 13px;
+    background: #eef2ff;
+    border-radius: 5px;
+    font-family: monospace;
+}
+
+.lp-section {
+    padding: 16px 16px;
+    border-bottom: 1px solid #eef2f7;
+}
+
+.lp-section:last-child {
+    border-bottom: none;
+}
+
+.lp-section-title {
+    font-size: 11px;
+    color: #94a3b8;
+    letter-spacing: 2px;
+    margin-bottom: 6px;
+}
+
+.lp-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 6px 0;
+    font-size: 13px;
+    color: #64748b;
+}
+
+.lp-row .lp-val {
+    font-size: 15px;
+    font-weight: bold;
+    color: #1e293b;
+    font-variant-numeric: tabular-nums;
+}
+
+.lp-row .lp-val.green {
+    color: #16a34a;
+}
+
+.lp-row .lp-val.blue {
+    color: #2b5ce6;
 }
 
 .main-area {
@@ -432,6 +526,7 @@ body {
 }
 
 .fb-time { color: #8a7a30; flex-shrink: 0; }
+.fb-no { color: #2b5ce6; flex-shrink: 0; font-weight: 600; }
 .fb-plane { color: #4a3a00; flex-shrink: 0; font-weight: 600; }
 .fb-route { flex-shrink: 0; }
 
@@ -497,6 +592,16 @@ body {
 
 .schedule-modal {
     max-height: 660px;
+}
+
+.admin-modal {
+    max-height: 340px;
+    max-width: 420px;
+}
+
+.airline-modal {
+    max-height: 520px;
+    max-width: 440px;
 }
 
 .modal-header {
@@ -813,11 +918,17 @@ body {
 .route-create-btn:hover { background: #1e4ed4; }
 .route-create-btn:active { background: #1740b8; }
 
-/* ========== 购买飞机卡片 ========== */
+/* ========== 购买飞机列表 ========== */
+#buy-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
 .plane-card {
     border: 1px solid #e2e8f0;
     border-radius: 10px;
-    padding: 12px;
+    padding: 14px;
     background: #f8fafc;
 }
 
@@ -883,6 +994,11 @@ body {
     letter-spacing: 1px;
 }
 
+.naming-label b {
+    color: #1e293b;
+    font-weight: 600;
+}
+
 .naming-label-second {
     margin-top: 18px;
 }
@@ -904,6 +1020,20 @@ body {
 .naming-input:focus {
     border-color: #2b5ce6;
     background: #ffffff;
+}
+
+.naming-input.error {
+    border-color: #dc2626;
+    background: #fef2f2;
+}
+
+.ae-code-input {
+    text-transform: uppercase;
+    letter-spacing: 8px;
+    text-align: center;
+    font-family: monospace;
+    font-weight: bold;
+    font-size: 20px;
 }
 
 /* ========== 自定义下拉 ========== */
@@ -1256,6 +1386,168 @@ body {
     cursor: not-allowed;
 }
 
+/* ========== 航线 tab 卡片 ========== */
+.route-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.route-card:hover {
+    border-color: #93c5fd;
+    box-shadow: 0 2px 8px rgba(43,92,230,0.08);
+}
+
+.route-card .rc-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.route-card .rc-name {
+    font-size: 14px;
+    font-weight: bold;
+    color: #2b5ce6;
+    letter-spacing: 0.5px;
+}
+
+.route-card .rc-arrow {
+    color: #94a3b8;
+    margin: 0 4px;
+    font-weight: 400;
+}
+
+.route-card .rc-index {
+    font-size: 11px;
+    color: #16a34a;
+    background: #dcfce7;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 500;
+    flex-shrink: 0;
+}
+
+.route-card .rc-info {
+    font-size: 12px;
+    color: #64748b;
+    letter-spacing: 0.5px;
+}
+
+.route-card .rc-info b {
+    color: #1e293b;
+    font-weight: 600;
+}
+
+/* ========== 机场 tab 卡片 ========== */
+.airport-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.airport-card:hover {
+    border-color: #93c5fd;
+    box-shadow: 0 2px 8px rgba(43,92,230,0.08);
+}
+
+.airport-card .ac-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.airport-card .ac-name {
+    font-size: 15px;
+    font-weight: bold;
+    color: #1e293b;
+    letter-spacing: 0.5px;
+}
+
+.airport-card .ac-iata {
+    font-size: 11px;
+    font-weight: bold;
+    color: #2b5ce6;
+    letter-spacing: 2px;
+    padding: 2px 8px 2px 6px;
+    background: #eef2ff;
+    border-radius: 4px;
+    margin-left: 8px;
+    font-family: monospace;
+}
+
+.airport-card .ac-index {
+    font-size: 16px;
+    font-weight: bold;
+    color: #2b5ce6;
+    font-family: monospace;
+    letter-spacing: 0.5px;
+}
+
+.airport-card .ac-info {
+    display: flex;
+    gap: 12px;
+    font-size: 12px;
+    color: #64748b;
+    letter-spacing: 0.3px;
+    flex-wrap: wrap;
+}
+
+.airport-card .ac-info b {
+    color: #1e293b;
+    font-weight: 600;
+}
+
+.airport-card .ac-info .dot {
+    color: #cbd5e1;
+}
+
+.airport-card .ac-tags {
+    display: flex;
+    gap: 5px;
+    margin-top: 8px;
+}
+
+.airport-card .ac-tag {
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 4px;
+    letter-spacing: 0.5px;
+    font-weight: 500;
+}
+
+.airport-card .ac-tag.plateau { background: #fef3c7; color: #92400e; }
+.airport-card .ac-tag.high    { background: #fee2e2; color: #991b1b; }
+
+/* ========== 航线 Picker 左右布局 ========== */
+.picker-row {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: start;
+    gap: 10px;
+}
+
+.picker-arrow {
+    font-size: 20px;
+    color: #cbd5e1;
+    line-height: 1;
+    padding-top: 42px;
+}
+
+.picker-field {
+    display: flex;
+    flex-direction: column;
+}
+
 /* ========== Toast ========== */
 .toast {
     position: absolute;
@@ -1543,14 +1835,352 @@ body {
     gap: 6px;
 }
 
+/* ========== 响应式 ========== */
 @media (max-width: 1366px) {
-    .left-panel { width: 14vw; min-width: 130px; }
+    .left-panel { width: 14vw; min-width: 160px; }
     .right-panel { width: 30vw; min-width: 280px; }
 }
 
 @media (max-width: 1024px) {
-    .left-panel { width: 12vw; min-width: 110px; }
+    .left-panel { width: 12vw; min-width: 140px; }
     .right-panel { width: 34vw; min-width: 260px; }
     .tab { font-size: 12px; }
     .panel-content { padding: 10px; }
+}
+/* ========== 动态栏成本 ========== */
+.fb-cost {
+    color: #dc2626;
+    font-weight: 600;
+    font-family: -apple-system, "PingFang SC", sans-serif;
+    font-size: 11px;
+    flex-shrink: 0;
+}
+/* ========== 航线开通费 ========== */
+.route-open-fee {
+    margin: 0 30px 10px;
+    padding: 12px 18px;
+    background: #fff7ed;
+    border: 1px solid #fed7aa;
+    border-radius: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+}
+
+.route-open-fee-label {
+    font-size: 13px;
+    color: #c2410c;
+    font-weight: 500;
+    letter-spacing: 2px;
+}
+
+.route-open-fee-value {
+    font-size: 20px;
+    font-weight: bold;
+    color: #c2410c;
+    letter-spacing: 0.5px;
+    line-height: 1;
+}
+
+/* 建航线按钮 disabled 态 */
+.route-create-btn:disabled {
+    background: #cbd5e1;
+    color: #94a3b8;
+    cursor: not-allowed;
+}
+
+.route-create-btn:hover:not(:disabled) { background: #1e4ed4; }
+.route-create-btn:active:not(:disabled) { background: #1740b8; }
+
+/* 动态栏成本 */
+.fb-cost {
+    color: #dc2626;
+    font-weight: 600;
+    font-family: -apple-system, "PingFang SC", sans-serif;
+    font-size: 11px;
+    flex-shrink: 0;
+}
+/* ========== 声誉颜色 ========== */
+.lp-val.rep-red    { color: #dc2626; }
+.lp-val.rep-orange { color: #ea580c; }
+.lp-val.rep-yellow { color: #ca8a04; }
+.lp-val.rep-lime   { color: #65a30d; }
+.lp-val.rep-green  { color: #16a34a; }
+
+/* ========== 飞机详情弹窗 ========== */
+.pd-head {
+    text-align: center;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #eef2f7;
+    margin-bottom: 16px;
+}
+
+.pd-name {
+    font-size: 22px;
+    font-weight: bold;
+    color: #2b5ce6;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+}
+
+.pd-sub {
+    font-size: 13px;
+    color: #64748b;
+    letter-spacing: 0.5px;
+}
+
+.pd-cat {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: bold;
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-left: 6px;
+    letter-spacing: 1px;
+    vertical-align: middle;
+}
+
+.pd-cat.M { background: #e0f2fe; color: #0369a1; }
+.pd-cat.H { background: #fef3c7; color: #92400e; }
+.pd-cat.J { background: #fee2e2; color: #991b1b; }
+
+.pd-section {
+    margin-bottom: 18px;
+}
+
+.pd-section:last-child {
+    margin-bottom: 0;
+}
+
+.pd-section-title {
+    font-size: 11px;
+    color: #94a3b8;
+    letter-spacing: 2px;
+    margin-bottom: 10px;
+}
+
+.pd-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 6px 0;
+    font-size: 13px;
+    color: #64748b;
+    border-bottom: 1px solid #f8fafc;
+}
+
+.pd-row:last-child {
+    border-bottom: none;
+}
+
+.pd-row b {
+    font-size: 14px;
+    color: #1e293b;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.pd-row b.highlight {
+    color: #2b5ce6;
+    font-size: 15px;
+}
+/* ========== 存档系统 ========== */
+
+/* 全屏 overlay（用于存档相关弹窗，脱离 game-page 定位） */
+.overlay--full {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+
+/* 存档列表 */
+.save-empty {
+    text-align: center;
+    color: #94a3b8;
+    font-size: 13px;
+    padding: 60px 0;
+    letter-spacing: 1px;
+}
+
+.save-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.save-card:hover {
+    border-color: #93c5fd;
+    box-shadow: 0 2px 8px rgba(43, 92, 230, 0.08);
+}
+
+.save-card:last-child { margin-bottom: 0; }
+
+.save-card .sc-name {
+    font-size: 15px;
+    font-weight: bold;
+    color: #2b5ce6;
+    letter-spacing: 0.5px;
+    word-break: break-all;
+}
+
+.save-card .sc-airline {
+    font-size: 12px;
+    color: #64748b;
+    margin-top: 4px;
+    letter-spacing: 0.5px;
+    word-break: break-all;
+}
+
+.save-card .sc-time {
+    font-size: 13px;
+    color: #1e293b;
+    margin-top: 6px;
+    letter-spacing: 0.3px;
+    font-variant-numeric: tabular-nums;
+}
+
+.save-card .sc-meta {
+    font-size: 12px;
+    color: #94a3b8;
+    margin-top: 6px;
+    letter-spacing: 0.3px;
+}
+
+.save-card .sc-meta b {
+    color: #16a34a;
+    font-weight: 600;
+}
+
+.save-card .sc-meta .dot {
+    margin: 0 6px;
+    color: #cbd5e1;
+}
+
+.save-card .sc-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.sc-btn {
+    padding: 5px 14px;
+    font-size: 12px;
+    font-family: inherit;
+    font-weight: 500;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    white-space: nowrap;
+    letter-spacing: 1px;
+    color: #ffffff;
+    transition: background 0.15s;
+}
+
+.sc-btn.load { background: #2b5ce6; }
+.sc-btn.load:hover { background: #1e4ed4; }
+.sc-btn.load:active { background: #1740b8; }
+
+.sc-btn.del { background: #dc2626; }
+.sc-btn.del:hover { background: #b91c1c; }
+.sc-btn.del:active { background: #991b1b; }
+
+/* 删除确认弹窗内的名字高亮 */
+#del-confirm-name {
+    color: #dc2626;
+    font-weight: 600;
+}
+
+/* 资金验证弹窗 */
+.save-del-verify-modal {
+    max-width: 400px;
+    max-height: 440px;
+}
+
+.del-money-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    background: #f8fafc;
+    border: 1px solid #eef2f7;
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-bottom: 16px;
+}
+
+.del-money-info .label {
+    font-size: 12px;
+    color: #94a3b8;
+    letter-spacing: 1px;
+}
+
+.del-money-info .value {
+    font-size: 18px;
+    font-weight: bold;
+    color: #16a34a;
+    font-variant-numeric: tabular-nums;
+}
+
+.del-money-info .value .unit {
+    font-size: 12px;
+    color: #94a3b8;
+    font-weight: 400;
+    margin-left: 3px;
+}
+
+.del-label {
+    font-size: 13px;
+    color: #64748b;
+    margin-bottom: 8px;
+    letter-spacing: 1px;
+    display: block;
+}
+
+.del-input {
+    width: 100%;
+    padding: 11px 14px;
+    font-size: 15px;
+    font-family: inherit;
+    color: #1e293b;
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    outline: none;
+    letter-spacing: 1px;
+    transition: border-color 0.2s, background 0.2s;
+    box-sizing: border-box;
+}
+
+.del-input:focus {
+    border-color: #dc2626;
+    background: #ffffff;
+}
+
+.del-input.error {
+    border-color: #dc2626;
+    background: #fef2f2;
+    animation: delShake 0.3s;
+}
+
+@keyframes delShake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
+.del-hint {
+    font-size: 12px;
+    color: #94a3b8;
+    margin-top: 6px;
+    min-height: 16px;
+}
+
+.del-hint.error {
+    color: #dc2626;
+    font-weight: 500;
 }

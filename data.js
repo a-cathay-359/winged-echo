@@ -51,12 +51,156 @@ const AIRCRAFT_DATA = {
         cruiseSpeed: 850,
         range: 6200,
         mtow: 79000,
-        maxPayload: 17,
+        maxPayload: 20.0,
         fuelCapacity: 26000,
         cruiseFuelBurn: 2.94,
-        newPrice: 430000000
+        newPrice: 430000000,
+        wakeCategory: "M",
+        reputationRate: 0.01
+    },
+    B737_800: {
+        name: "波音 737-800 (CFM56-7B)",
+        shortName: "738",
+        displayName: "波音 737-800",
+        seatCapacity: 180,
+        cruiseSpeed: 850,
+        range: 5765,
+        mtow: 79000,
+        maxPayload: 20.0,
+        fuelCapacity: 26020,
+        cruiseFuelBurn: 3.25,
+        newPrice: 370000000,
+        wakeCategory: "M",
+        reputationRate: 0.01
+    },
+    B737_MAX8: {
+        name: "波音 737 MAX 8 (LEAP-1B)",
+        shortName: "78M",
+        displayName: "波音 737 MAX 8",
+        seatCapacity: 200,
+        cruiseSpeed: 850,
+        range: 6570,
+        mtow: 82200,
+        maxPayload: 20.8,
+        fuelCapacity: 25810,
+        cruiseFuelBurn: 3.10,
+        newPrice: 460000000,
+        wakeCategory: "M",
+        reputationRate: 0.01
+    },
+    A321ceo: {
+        name: "空客 A321ceo (CFM56-5B)",
+        shortName: "321",
+        displayName: "空客 A321ceo",
+        seatCapacity: 220,
+        cruiseSpeed: 850,
+        range: 5950,
+        mtow: 93500,
+        maxPayload: 20.0,
+        fuelCapacity: 30030,
+        cruiseFuelBurn: 3.60,
+        newPrice: 550000000,
+        wakeCategory: "M",
+        reputationRate: 0.01
+    },
+    A321neo: {
+        name: "空客 A321neo (LEAP-1A)",
+        shortName: "21N",
+        displayName: "空客 A321neo",
+        seatCapacity: 240,
+        cruiseSpeed: 850,
+        range: 7400,
+        mtow: 97000,
+        maxPayload: 21.4,
+        fuelCapacity: 32940,
+        cruiseFuelBurn: 3.20,
+        newPrice: 790000000,
+        wakeCategory: "M",
+        reputationRate: 0.01
+    },
+    A321XLR: {
+        name: "空客 A321XLR (LEAP-1A)",
+        shortName: "21XLR",
+        displayName: "空客 A321XLR",
+        seatCapacity: 244,
+        cruiseSpeed: 850,
+        range: 8700,
+        mtow: 101000,
+        maxPayload: 23.0,
+        fuelCapacity: 36390,
+        cruiseFuelBurn: 3.30,
+        newPrice: 870000000,
+        wakeCategory: "M",
+        reputationRate: 0.01
+    },
+    A330_300: {
+        name: "空客 A330-300 (Trent 700)",
+        shortName: "333",
+        displayName: "空客 A330-300",
+        seatCapacity: 330,
+        cruiseSpeed: 900,
+        range: 11750,
+        mtow: 242000,
+        maxPayload: 45.0,
+        fuelCapacity: 139090,
+        cruiseFuelBurn: 7.40,
+        newPrice: 1760000000,
+        wakeCategory: "H",
+        reputationRate: 0.015
+    },
+    A330_900: {
+        name: "空客 A330-900neo (Trent 7000)",
+        shortName: "339",
+        displayName: "空客 A330-900neo",
+        seatCapacity: 350,
+        cruiseSpeed: 900,
+        range: 13334,
+        mtow: 251000,
+        maxPayload: 45.5,
+        fuelCapacity: 139090,
+        cruiseFuelBurn: 7.04,
+        newPrice: 2040000000,
+        wakeCategory: "H",
+        reputationRate: 0.015
+    },
+    A350_900: {
+        name: "空客 A350-900 (Trent XWB)",
+        shortName: "A350-900",
+        displayName: "空客 A350-900",
+        seatCapacity: 360,
+        cruiseSpeed: 900,
+        range: 15000,
+        mtow: 268000,
+        maxPayload: 50.0,
+        fuelCapacity: 138000,
+        cruiseFuelBurn: 6.98,
+        newPrice: 2200000000,
+        wakeCategory: "H",
+        reputationRate: 0.015
+    },
+    A380_800: {
+        name: "空客 A380-800 (Trent 900)",
+        shortName: "380",
+        displayName: "空客 A380-800",
+        seatCapacity: 800,
+        cruiseSpeed: 950,
+        range: 14800,
+        mtow: 575000,
+        maxPayload: 65.0,
+        fuelCapacity: 320000,
+        cruiseFuelBurn: 15.00,
+        newPrice: 3100000000,
+        wakeCategory: "J",
+        reputationRate: 0.02
     }
 };
+
+function getAircraftData(shortName) {
+    const found = Object.values(AIRCRAFT_DATA).find(function (d) {
+        return d.shortName === shortName;
+    });
+    return found || Object.values(AIRCRAFT_DATA)[0];
+}
 
 // ==================== 机场数据 ====================
 
@@ -89,7 +233,82 @@ const AIRPORT_DATA = [
       throughput: 2465, grade: "4E", distance: 33,   isPlateau: false, isHighPlateau: false },
 
     { iata: "LXA", name: "拉萨贡嘎", city: "拉萨", lat: 29.2978, lng: 90.9119,
-      throughput: 628, grade: "4E", distance: 60,   isPlateau: true,  isHighPlateau: true }
+      throughput: 628, grade: "4E", distance: 60,   isPlateau: true,  isHighPlateau: true },
+
+    { iata: "PKX", name: "北京大兴", city: "北京", lat: 39.5098, lng: 116.4107,
+      throughput: 5361, grade: "4F", distance: 46,   isPlateau: false, isHighPlateau: false },
+
+    { iata: "SHA", name: "上海虹桥", city: "上海", lat: 31.1979, lng: 121.3363,
+      throughput: 5015, grade: "4E", distance: 13,   isPlateau: false, isHighPlateau: false },
+
+    { iata: "TSN", name: "天津滨海", city: "天津", lat: 39.126976, lng: 117.362141,
+      throughput: 1847, grade: "4E", distance: 13,   isPlateau: false, isHighPlateau: false },
+
+    { iata: "SJW", name: "石家庄正定", city: "石家庄", lat: 38.2806, lng: 114.6964,
+      throughput: 645, grade: "4E", distance: 33,   isPlateau: false, isHighPlateau: false },
+
+    { iata: "TYN", name: "太原武宿", city: "太原", lat: 37.752352, lng: 112.632995,
+      throughput: 1457, grade: "4E", distance: 9,    isPlateau: false, isHighPlateau: false },
+
+    { iata: "SHE", name: "沈阳桃仙", city: "沈阳", lat: 41.6400, lng: 123.4836,
+      throughput: 2493, grade: "4E", distance: 20,   isPlateau: false, isHighPlateau: false },
+
+    { iata: "DLC", name: "大连周水子", city: "大连", lat: 38.9656, lng: 121.5383,
+      throughput: 1929, grade: "4E", distance: 10,   isPlateau: false, isHighPlateau: false },
+
+    { iata: "CGQ", name: "长春龙嘉", city: "长春", lat: 43.996622, lng: 125.694328,
+      throughput: 1776, grade: "4E", distance: 32,   isPlateau: false, isHighPlateau: false },
+
+    { iata: "KHN", name: "南昌昌北", city: "南昌", lat: 28.8650, lng: 115.9000,
+      throughput: 1127, grade: "4E", distance: 20,   isPlateau: false, isHighPlateau: false },
+
+    { iata: "NGB", name: "宁波栎社", city: "宁波", lat: 29.8267, lng: 121.4619,
+      throughput: 1613, grade: "4E", distance: 12,   isPlateau: false, isHighPlateau: false },
+
+    { iata: "WNZ", name: "温州龙湾", city: "温州", lat: 27.907167, lng: 120.853506,
+      throughput: 1169, grade: "4E", distance: 20,   isPlateau: false, isHighPlateau: false },
+
+    { iata: "HFE", name: "合肥新桥", city: "合肥", lat: 31.985066, lng: 116.977944,
+      throughput: 1248, grade: "4E", distance: 32,   isPlateau: false, isHighPlateau: false },
+
+    { iata: "FOC", name: "福州长乐", city: "福州", lat: 25.928967, lng: 119.673864,
+      throughput: 1612, grade: "4E", distance: 50,   isPlateau: false, isHighPlateau: false },
+
+    { iata: "TNA", name: "济南遥墙", city: "济南", lat: 36.8572, lng: 117.2161,
+      throughput: 2032, grade: "4E", distance: 30,   isPlateau: false, isHighPlateau: false },
+
+    { iata: "NNG", name: "南宁吴圩", city: "南宁", lat: 22.6082667, lng: 108.1724417,
+      throughput: 1401, grade: "4E", distance: 28,   isPlateau: false, isHighPlateau: false },
+
+    { iata: "HAK", name: "海口美兰", city: "海口", lat: 19.605538, lng: 110.380451,
+      throughput: 1808, grade: "4E", distance: 18,   isPlateau: false, isHighPlateau: false },
+
+    { iata: "KWE", name: "贵阳龙洞堡", city: "贵阳", lat: 26.53861, lng: 106.80083,
+      throughput: 2231, grade: "4E", distance: 11,   isPlateau: false, isHighPlateau: false },
+
+    { iata: "LHW", name: "兰州中川", city: "兰州", lat: 36.512593, lng: 103.62005,
+      throughput: 1774, grade: "4E", distance: 70,   isPlateau: true,  isHighPlateau: false },
+
+    { iata: "XNN", name: "西宁曹家堡", city: "西宁", lat: 36.5297, lng: 102.0386,
+      throughput: 703, grade: "4E", distance: 28,   isPlateau: true,  isHighPlateau: false },
+
+    { iata: "INC", name: "银川河东", city: "银川", lat: 38.3214, lng: 106.3936,
+      throughput: 986, grade: "4E", distance: 19,   isPlateau: false, isHighPlateau: false },
+
+    { iata: "KWL", name: "桂林两江", city: "桂林", lat: 25.21944, lng: 110.03944,
+      throughput: 593, grade: "4E", distance: 30,   isPlateau: false, isHighPlateau: false },
+
+    { iata: "ZUH", name: "珠海金湾", city: "珠海", lat: 22.005756, lng: 113.381945,
+      throughput: 1325, grade: "4E", distance: 40,   isPlateau: false, isHighPlateau: false },
+
+    { iata: "SWA", name: "揭阳潮汕", city: "揭阳", lat: 23.5522, lng: 116.5031,
+      throughput: 867, grade: "4E", distance: 20,   isPlateau: false, isHighPlateau: false },
+
+    { iata: "CSX", name: "长沙黄花", city: "长沙", lat: 28.1967, lng: 113.2208,
+      throughput: 3128, grade: "4F", distance: 22,   isPlateau: false, isHighPlateau: false },
+
+    { iata: "XMN", name: "厦门高崎", city: "厦门", lat: 24.5440, lng: 118.1277,
+      throughput: 2919, grade: "4E", distance: 12,   isPlateau: false, isHighPlateau: false }
 ];
 
 // ==================== 城市数据 ====================
@@ -103,7 +322,32 @@ const CITY_DATA = {
     "昆明":     { gdp:  8600, tourismVisitors: 3.58,  tourismRevenue: 4015, perCapitaSpend: 1121, businessIndex: 0.40 },
     "哈尔滨":   { gdp:  6200, tourismVisitors: 2.02,  tourismRevenue: 2818, perCapitaSpend: 1395, businessIndex: 0.35 },
     "乌鲁木齐": { gdp:  4500, tourismVisitors: 1.24,  tourismRevenue: 1300, perCapitaSpend: 1048, businessIndex: 0.30 },
-    "拉萨":     { gdp:  1000, tourismVisitors: 0.505, tourismRevenue:  606, perCapitaSpend: 1200, businessIndex: 0.20 }
+    "拉萨":     { gdp:  1000, tourismVisitors: 0.505, tourismRevenue:  606, perCapitaSpend: 1200, businessIndex: 0.20 },
+
+    "天津":     { gdp: 18539, tourismVisitors: 2.72,  tourismRevenue: 3200, perCapitaSpend: 1176, businessIndex: 0.75 },
+    "石家庄":   { gdp:  8651, tourismVisitors: 0.95,  tourismRevenue: 1010, perCapitaSpend: 1063, businessIndex: 0.45 },
+    "太原":     { gdp:  5382, tourismVisitors: 1.00,  tourismRevenue: 1000, perCapitaSpend: 1000, businessIndex: 0.40 },
+    "沈阳":     { gdp:  9100, tourismVisitors: 2.30,  tourismRevenue: 2200, perCapitaSpend:  956, businessIndex: 0.50 },
+    "大连":     { gdp: 10002, tourismVisitors: 1.50,  tourismRevenue: 1500, perCapitaSpend: 1000, businessIndex: 0.55 },
+    "长春":     { gdp:  8005, tourismVisitors: 1.40,  tourismRevenue: 1400, perCapitaSpend: 1000, businessIndex: 0.40 },
+    "南昌":     { gdp:  8141, tourismVisitors: 1.50,  tourismRevenue: 1500, perCapitaSpend: 1000, businessIndex: 0.45 },
+    "宁波":     { gdp: 18716, tourismVisitors: 1.20,  tourismRevenue: 1400, perCapitaSpend: 1167, businessIndex: 0.80 },
+    "温州":     { gdp: 10213, tourismVisitors: 1.20,  tourismRevenue: 1300, perCapitaSpend: 1083, businessIndex: 0.60 },
+    "合肥":     { gdp: 14210, tourismVisitors: 1.90,  tourismRevenue: 2307, perCapitaSpend: 1214, businessIndex: 0.65 },
+    "福州":     { gdp: 15112, tourismVisitors: 1.40,  tourismRevenue: 1416, perCapitaSpend: 1011, businessIndex: 0.65 },
+    "济南":     { gdp: 14210, tourismVisitors: 1.30,  tourismRevenue: 1399, perCapitaSpend: 1076, businessIndex: 0.60 },
+    "南宁":     { gdp:  6212, tourismVisitors: 1.20,  tourismRevenue: 1300, perCapitaSpend: 1083, businessIndex: 0.45 },
+    "海口":     { gdp:  2562, tourismVisitors: 0.28,  tourismRevenue:  469, perCapitaSpend: 1675, businessIndex: 0.40 },
+    "贵阳":     { gdp:  6038, tourismVisitors: 1.60,  tourismRevenue: 1800, perCapitaSpend: 1125, businessIndex: 0.45 },
+    "兰州":     { gdp:  3903, tourismVisitors: 1.20,  tourismRevenue: 1000, perCapitaSpend:  833, businessIndex: 0.35 },
+    "西宁":     { gdp:  1914, tourismVisitors: 0.30,  tourismRevenue:  338, perCapitaSpend: 1127, businessIndex: 0.30 },
+    "银川":     { gdp:  3033, tourismVisitors: 0.40,  tourismRevenue:  400, perCapitaSpend: 1000, businessIndex: 0.35 },
+    "桂林":     { gdp:  2579, tourismVisitors: 1.75,  tourismRevenue: 2175, perCapitaSpend: 1243, businessIndex: 0.40 },
+    "珠海":     { gdp:  4573, tourismVisitors: 0.23,  tourismRevenue:  250, perCapitaSpend: 1087, businessIndex: 0.60 },
+    "揭阳":     { gdp:  2553, tourismVisitors: 0.12,  tourismRevenue:  150, perCapitaSpend: 1250, businessIndex: 0.30 },
+
+    "长沙":     { gdp: 15737, tourismVisitors: 2.33,  tourismRevenue: 2580, perCapitaSpend: 1107, businessIndex: 0.55 },
+    "厦门":     { gdp:  8980, tourismVisitors: 1.44,  tourismRevenue: 2135, perCapitaSpend: 1483, businessIndex: 0.60 }
 };
 
 // ==================== 机场指数算法 ====================
@@ -141,8 +385,8 @@ const ROUTE_CONSTANTS = {
     BUSINESS_DECAY: 900,
     TOURISM_FLOOR: 0.15,
     BUSINESS_FLOOR: 0.40,
-    K_TOURISM: 0.226,
-    K_BUSINESS: 0.0783
+    K_TOURISM: 0.5424,
+    K_BUSINESS: 0.18792
 };
 
 const EARTH_RADIUS_KM = 6371;
@@ -165,24 +409,18 @@ function calcCityBusinessAttraction(city) {
     return city.gdp * city.businessIndex;
 }
 
-function calcRouteDemand(iataA, iataB) {
-    const a = AIRPORT_GCJ.find(function (x) { return x.iata === iataA; });
-    const b = AIRPORT_GCJ.find(function (x) { return x.iata === iataB; });
+function calcDemandFromCoords(lat1, lng1, city1, lat2, lng2, city2) {
+    const cA = CITY_DATA[city1];
+    const cB = CITY_DATA[city2];
+    if (!cA || !cB) return null;
 
-    if (!a || !b) return null;
-
-    const cityA = CITY_DATA[a.city];
-    const cityB = CITY_DATA[b.city];
-
-    if (!cityA || !cityB) return null;
-
-    const distance = calcDistanceKm(a.lat, a.lng, b.lat, b.lng);
+    const distance = calcDistanceKm(lat1, lng1, lat2, lng2);
 
     const tourismBase = Math.sqrt(
-        calcCityTourismAttraction(cityA) * calcCityTourismAttraction(cityB)
+        calcCityTourismAttraction(cA) * calcCityTourismAttraction(cB)
     );
     const businessBase = Math.sqrt(
-        calcCityBusinessAttraction(cityA) * calcCityBusinessAttraction(cityB)
+        calcCityBusinessAttraction(cA) * calcCityBusinessAttraction(cB)
     );
 
     const tourismDecay = Math.max(
@@ -202,6 +440,104 @@ function calcRouteDemand(iataA, iataB) {
         tourism: tourism,
         business: business,
         total: tourism + business
+    };
+}
+
+function getCityCenter(city) {
+    const airports = AIRPORT_GCJ.filter(function (a) {
+        return a.city === city;
+    });
+    if (airports.length === 0) return null;
+
+    let sumLat = 0;
+    let sumLng = 0;
+    airports.forEach(function (a) {
+        sumLat += a.lat;
+        sumLng += a.lng;
+    });
+
+    return {
+        lat: sumLat / airports.length,
+        lng: sumLng / airports.length
+    };
+}
+
+function calcCityPairDemand(cityA, cityB) {
+    const cA = getCityCenter(cityA);
+    const cB = getCityCenter(cityB);
+    if (!cA || !cB) return null;
+    return calcDemandFromCoords(cA.lat, cA.lng, cityA, cB.lat, cB.lng, cityB);
+}
+
+function calcRouteDemand(iataA, iataB) {
+    const a = AIRPORT_GCJ.find(function (x) { return x.iata === iataA; });
+    const b = AIRPORT_GCJ.find(function (x) { return x.iata === iataB; });
+    if (!a || !b) return null;
+    return calcDemandFromCoords(a.lat, a.lng, a.city, b.lat, b.lng, b.city);
+}
+
+function calcRouteDemandShared(iataA, iataB, extraRoutes) {
+    const a = AIRPORT_GCJ.find(function (x) { return x.iata === iataA; });
+    const b = AIRPORT_GCJ.find(function (x) { return x.iata === iataB; });
+    if (!a || !b) return null;
+
+    const cityDemand = calcCityPairDemand(a.city, b.city);
+    if (!cityDemand) return null;
+
+    const allRoutes = [];
+
+    if (typeof routes !== 'undefined' && routes) {
+        routes.forEach(function (r) {
+            allRoutes.push({ from: r.from, to: r.to });
+        });
+    }
+
+    if (extraRoutes) {
+        extraRoutes.forEach(function (r) {
+            allRoutes.push({ from: r.from, to: r.to });
+        });
+    }
+
+    const peers = [];
+    allRoutes.forEach(function (r) {
+        const ra = AIRPORT_GCJ.find(function (x) { return x.iata === r.from; });
+        const rb = AIRPORT_GCJ.find(function (x) { return x.iata === r.to; });
+        if (!ra || !rb) return;
+        if (ra.city === a.city && rb.city === b.city) {
+            peers.push(r);
+        }
+    });
+
+    let hasSelf = false;
+    peers.forEach(function (r) {
+        if (r.from === iataA && r.to === iataB) hasSelf = true;
+    });
+    if (!hasSelf) {
+        peers.push({ from: iataA, to: iataB });
+    }
+
+    let totalWeight = 0;
+    let myWeight = 0;
+    peers.forEach(function (r) {
+        const ra = AIRPORT_GCJ.find(function (x) { return x.iata === r.from; });
+        const rb = AIRPORT_GCJ.find(function (x) { return x.iata === r.to; });
+        if (!ra || !rb) return;
+        const w = ra.airportIndex * rb.airportIndex;
+        totalWeight += w;
+        if (r.from === iataA && r.to === iataB) {
+            myWeight = w;
+        }
+    });
+
+    const share = totalWeight > 0 ? (myWeight / totalWeight) : 1;
+    const airportDist = calcDistanceKm(a.lat, a.lng, b.lat, b.lng);
+
+    return {
+        distance: airportDist,
+        total: cityDemand.total * share,
+        tourism: cityDemand.tourism * share,
+        business: cityDemand.business * share,
+        share: share
     };
 }
 
@@ -258,24 +594,34 @@ const AIRPORT_GCJ = AIRPORT_DATA.map(function (a) {
     };
 });
 
-// ==================== 周转时间 ====================
-// 单端周转：4F 30min / 4E 25min / 其他 20min
-// 一趟往返 = 单程飞行 × 2 + 周转A + 周转B
+// ==================== 飞行时长算法 ====================
 
 const GRADE_TURN = { "4F": 30, "4E": 25, "4D": 20, "4C": 20 };
-const CRUISE_SPEED_KMH = 850;
+
+const FLIGHT_CONSTANTS = {
+    ACCEL_TIME: 15,
+    ACCEL_DIST: 100,
+    ACCEL_SPEED: 800,
+    MIN_DISTANCE: 200
+};
 
 function getTurnTime(grade) {
     return GRADE_TURN[grade] || 20;
 }
 
-function calcFlightDuration(iataA, iataB) {
+function calcFlightDuration(iataA, iataB, aircraftType) {
     const a = AIRPORT_GCJ.find(function (x) { return x.iata === iataA; });
     const b = AIRPORT_GCJ.find(function (x) { return x.iata === iataB; });
     if (!a || !b) return null;
 
     const distance = calcDistanceKm(a.lat, a.lng, b.lat, b.lng);
-    const flightMin = Math.round(distance / CRUISE_SPEED_KMH * 60);
+    const ac = getAircraftData(aircraftType);
+    const cruiseSpeed = ac.cruiseSpeed;
+
+    const cruiseDist = Math.max(0, distance - 2 * FLIGHT_CONSTANTS.ACCEL_DIST);
+    const cruiseTime = cruiseDist / cruiseSpeed * 60;
+    const flightMin = 2 * FLIGHT_CONSTANTS.ACCEL_TIME + cruiseTime;
+
     const turnFrom = getTurnTime(a.grade);
     const turnTo = getTurnTime(b.grade);
     const roundMin = flightMin * 2 + turnFrom + turnTo;
@@ -285,8 +631,97 @@ function calcFlightDuration(iataA, iataB) {
         flightMin: flightMin,
         turnFrom: turnFrom,
         turnTo: turnTo,
-        roundMin: roundMin
+        roundMin: roundMin,
+        cruiseSpeed: cruiseSpeed,
+        cruiseDist: cruiseDist
     };
+}
+
+// ==================== 航线成本算法 ====================
+
+const FUEL_PRICE_PER_TON = 6000;
+const FUEL_DENSITY = 0.8;
+
+function calcEnrouteFee(aircraftType, distanceKm) {
+    const ac = getAircraftData(aircraftType);
+    const t = ac.mtow / 1000;
+    const dist = Math.max(0, distanceKm - 20);
+
+    if (t <= 25) return 1.5 * dist;
+    if (t <= 50) return 3.0 * dist;
+    if (t <= 100) return 3.4 * dist;
+    if (t <= 200) return 3.8 * dist;
+    return 233 * dist / 100 * Math.sqrt(t / 50);
+}
+
+function calcLandingFee(aircraftType) {
+    const ac = getAircraftData(aircraftType);
+    const t = ac.mtow / 1000;
+
+    if (t <= 25) return 990;
+    if (t <= 50) return 1060;
+    if (t <= 100) return 1060 + 21 * (t - 50);
+    if (t <= 200) return 1920 + 23 * (t - 100);
+    return 3820 + 27 * (t - 200);
+}
+
+function calcFuelCost(aircraftType, distanceKm) {
+    const ac = getAircraftData(aircraftType);
+    const kgPerKm = ac.cruiseFuelBurn * FUEL_DENSITY;
+    const yuanPerKm = kgPerKm / 1000 * FUEL_PRICE_PER_TON;
+    return yuanPerKm * distanceKm;
+}
+
+function calcSegmentCost(aircraftType, distanceKm) {
+    const enroute = calcEnrouteFee(aircraftType, distanceKm);
+    const landing = calcLandingFee(aircraftType) * 2;
+    const fuel = calcFuelCost(aircraftType, distanceKm);
+
+    return {
+        enroute: enroute,
+        landing: landing,
+        fuel: fuel,
+        total: enroute + landing + fuel
+    };
+}
+
+// ==================== 航线开通费算法 ====================
+
+const ROUTE_OPEN_FEE_PER_KM = 8500;
+
+function calcRouteOpenFee(distanceKm) {
+    return Math.round(distanceKm * ROUTE_OPEN_FEE_PER_KM);
+}
+
+// ==================== 客座率算法 ====================
+
+const LOAD_FACTOR_CONSTANTS = {
+    BASE: 0.6,
+    WAKECAT: { "M": 1.0, "H": 1.2, "J": 1.3 },
+    DIST_DECAY: 800,
+    CAP: 0.95
+};
+
+function calcLoadFactor(fromIata, toIata, aircraftType, outboundCapacity) {
+    const ac = getAircraftData(aircraftType);
+    const dur = calcFlightDuration(fromIata, toIata, aircraftType);
+    if (!dur) return 0;
+
+    const catFactor = LOAD_FACTOR_CONSTANTS.WAKECAT[ac.wakeCategory] || 1.0;
+    const repFactor = 0.5 + airlineReputation / 100;
+    const distFactor = 1 - Math.exp(-dur.distance / LOAD_FACTOR_CONSTANTS.DIST_DECAY);
+
+    let lf = LOAD_FACTOR_CONSTANTS.BASE * catFactor * repFactor * distFactor;
+
+    if (outboundCapacity && outboundCapacity > 0) {
+        const demand = calcRouteDemandShared(fromIata, toIata);
+        if (demand && demand.total > 0) {
+            const demandRatio = demand.total / outboundCapacity;
+            lf = Math.min(lf, demandRatio);
+        }
+    }
+
+    return Math.min(lf, LOAD_FACTOR_CONSTANTS.CAP);
 }
 
 // ==================== 启动页背景航线 ====================
