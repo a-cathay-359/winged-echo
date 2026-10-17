@@ -2184,3 +2184,794 @@ body {
     color: #dc2626;
     font-weight: 500;
 }
+/* ========== 可搜索下拉 ========== */
+
+.cs-input {
+    flex: 1;
+    min-width: 0;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 15px;
+    font-family: inherit;
+    color: #1e293b;
+    padding: 0;
+    letter-spacing: 0.5px;
+}
+
+.cs-input::placeholder {
+    color: #94a3b8;
+}
+
+/* ========== 存档系统 ========== */
+
+/* 启动页里的存档弹窗：全屏定位（游戏内走 .main-area 默认定位） */
+#start-page > .overlay {
+    top: 0;
+}
+
+.save-empty {
+    text-align: center;
+    color: #94a3b8;
+    font-size: 13px;
+    padding: 60px 0;
+    letter-spacing: 1px;
+}
+
+.save-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.save-card:hover {
+    border-color: #93c5fd;
+    box-shadow: 0 2px 8px rgba(43, 92, 230, 0.08);
+}
+
+.save-card:last-child { margin-bottom: 0; }
+
+.save-card .sc-name {
+    font-size: 15px;
+    font-weight: bold;
+    color: #2b5ce6;
+    letter-spacing: 0.5px;
+    word-break: break-all;
+}
+
+.save-card .sc-airline {
+    font-size: 12px;
+    color: #64748b;
+    margin-top: 4px;
+    letter-spacing: 0.5px;
+    word-break: break-all;
+}
+
+.save-card .sc-time {
+    font-size: 13px;
+    color: #1e293b;
+    margin-top: 6px;
+    letter-spacing: 0.3px;
+    font-variant-numeric: tabular-nums;
+}
+
+.save-card .sc-meta {
+    font-size: 12px;
+    color: #94a3b8;
+    margin-top: 6px;
+    letter-spacing: 0.3px;
+}
+
+.save-card .sc-meta b {
+    color: #16a34a;
+    font-weight: 600;
+}
+
+.save-card .sc-meta .dot {
+    margin: 0 6px;
+    color: #cbd5e1;
+}
+
+.save-card .sc-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.sc-btn {
+    padding: 5px 14px;
+    font-size: 12px;
+    font-family: inherit;
+    font-weight: 500;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    white-space: nowrap;
+    letter-spacing: 1px;
+    color: #ffffff;
+    transition: background 0.15s;
+}
+
+.sc-btn.load { background: #2b5ce6; }
+.sc-btn.load:hover { background: #1e4ed4; }
+.sc-btn.load:active { background: #1740b8; }
+
+.sc-btn.del { background: #dc2626; }
+.sc-btn.del:hover { background: #b91c1c; }
+.sc-btn.del:active { background: #991b1b; }
+
+#del-confirm-name {
+    color: #dc2626;
+    font-weight: 600;
+}
+
+.save-del-verify-modal {
+    max-width: 400px;
+    max-height: 440px;
+}
+
+.del-money-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    background: #f8fafc;
+    border: 1px solid #eef2f7;
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-bottom: 16px;
+}
+
+.del-money-info .label {
+    font-size: 12px;
+    color: #94a3b8;
+    letter-spacing: 1px;
+}
+
+.del-money-info .value {
+    font-size: 18px;
+    font-weight: bold;
+    color: #16a34a;
+    font-variant-numeric: tabular-nums;
+}
+
+.del-money-info .value .unit {
+    font-size: 12px;
+    color: #94a3b8;
+    font-weight: 400;
+    margin-left: 3px;
+}
+
+.del-label {
+    font-size: 13px;
+    color: #64748b;
+    margin-bottom: 8px;
+    letter-spacing: 1px;
+    display: block;
+}
+
+.del-input {
+    width: 100%;
+    padding: 11px 14px;
+    font-size: 15px;
+    font-family: inherit;
+    color: #1e293b;
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    outline: none;
+    letter-spacing: 1px;
+    transition: border-color 0.2s, background 0.2s;
+    box-sizing: border-box;
+}
+
+.del-input:focus {
+    border-color: #dc2626;
+    background: #ffffff;
+}
+
+.del-input.error {
+    border-color: #dc2626;
+    background: #fef2f2;
+    animation: delShake 0.3s;
+}
+
+@keyframes delShake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
+.del-hint {
+    font-size: 12px;
+    color: #94a3b8;
+    margin-top: 6px;
+    min-height: 16px;
+}
+
+.del-hint.error {
+    color: #dc2626;
+    font-weight: 500;
+}
+/* ========== 购买飞机 · 双模式 ========== */
+
+/* 遮罩（仅地图区，两种模式都在） */
+.buy-dim {
+    position: absolute;
+    top: max(22%, 100px);
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: none;
+    z-index: 100;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+}
+
+.buy-dim.active {
+    display: block;
+    opacity: 1;
+}
+
+/* 弹窗壳：fixed，位置尺寸全由 JS 控制 + 形变过渡 */
+.buy-modal-shell {
+    position: fixed;
+    display: none;
+    z-index: 200;
+    pointer-events: none;
+    transition:
+        left 0.32s cubic-bezier(0.4, 0, 0.2, 1),
+        top 0.32s cubic-bezier(0.4, 0, 0.2, 1),
+        width 0.32s cubic-bezier(0.4, 0, 0.2, 1),
+        height 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.buy-modal-shell.active { display: block; }
+
+.buy-modal-shell .buy-modal {
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    max-height: none;
+    pointer-events: auto;
+}
+
+.buy-modal-shell .modal-body {
+    transition: opacity 0.15s ease;
+    overflow-y: auto;
+    min-height: 0;
+}
+
+/* header 左侧标题 */
+.buy-modal-shell .modal-header .mh-title { flex: 1; }
+.buy-modal-shell .modal-header .mh-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+/* 模式切换分段 */
+.buy-mode-group {
+    display: inline-flex;
+    border: 1px solid #c0d4e8;
+    border-radius: 6px;
+    overflow: hidden;
+    background: #ffffff;
+}
+
+.buy-mode-seg {
+    border: none;
+    background: transparent;
+    padding: 4px 12px;
+    font-size: 12px;
+    font-family: inherit;
+    color: #444;
+    cursor: pointer;
+    line-height: 1.2;
+    transition: background 0.15s;
+    white-space: nowrap;
+}
+
+.buy-mode-seg:hover { background: #f1f5f9; }
+
+.buy-mode-seg.active {
+    background: #e2e8f0;
+    color: #2b5ce6;
+    font-weight: 500;
+}
+
+/* 列表容器：二选一显示 */
+.buy-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+}
+
+#buy-list-card,
+#buy-list-table {
+    display: none;
+}
+
+/* ===== 表格模式 ===== */
+.buy-table-wrap {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.buy-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+
+.buy-table th {
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 8px;
+    font-weight: 600;
+    color: #475569;
+    text-align: left;
+    cursor: pointer;
+    white-space: nowrap;
+    user-select: none;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    transition: background 0.15s;
+}
+
+.buy-table th:hover { background: #eef2f7; }
+
+.buy-table th.no-sort { cursor: default; }
+.buy-table th.no-sort:hover { background: #f8fafc; }
+
+.buy-table th .sort-icon {
+    display: inline-block;
+    margin-left: 3px;
+    color: #cbd5e1;
+    font-size: 9px;
+    vertical-align: 1px;
+}
+
+.buy-table th.sorted .sort-icon { color: #2b5ce6; }
+
+.buy-table td {
+    padding: 9px 8px;
+    border-bottom: 1px solid #f1f5f9;
+    color: #1e293b;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+.buy-table tr:hover td { background: #f8fafc; }
+.buy-table tr:last-child td { border-bottom: none; }
+
+.buy-table .bt-name {
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.buy-table .bt-price {
+    color: #dc2626;
+    font-weight: 600;
+}
+
+.buy-table .bt-col-action {
+    text-align: right;
+}
+
+.bt-buy {
+    padding: 4px 10px;
+    font-size: 11px;
+    font-family: inherit;
+    background: #2b5ce6;
+    color: #ffffff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background 0.15s;
+    white-space: nowrap;
+}
+
+.bt-buy:hover { background: #1e4ed4; }
+.bt-buy:active { background: #1740b8; }
+
+.bt-buy:disabled {
+    background: #cbd5e1;
+    color: #94a3b8;
+    cursor: not-allowed;
+}
+
+.bt-buy:disabled:hover { background: #cbd5e1; }
+
+.buy-dim.no-dim {
+    background: transparent;
+}
+/* ========== 出售飞机弹窗 ========== */
+
+.sell-modal {
+    max-width: 420px;
+    max-height: 440px;
+}
+
+.sell-info-box {
+    background: #f8fafc;
+    border: 1px solid #eef2f7;
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin-bottom: 18px;
+}
+
+.sell-info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 7px 0;
+    font-size: 13px;
+    color: #64748b;
+    border-bottom: 1px solid #eef2f7;
+}
+
+.sell-info-row:last-child {
+    border-bottom: none;
+}
+
+.sell-info-row b {
+    font-size: 14px;
+    color: #1e293b;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.sell-info-row.total {
+    border-top: 1px solid #e2e8f0;
+    border-bottom: none;
+    margin-top: 4px;
+    padding-top: 12px;
+}
+
+.sell-info-row.total b {
+    color: #16a34a;
+    font-size: 18px;
+    font-weight: bold;
+}
+/* ========== 机场分级 · 通航 / 枢纽 / 分公司 ========== */
+
+/* --- 机场面板 · 通航状态块 --- */
+.ap-panel-status {
+    border-radius: 10px;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+}
+
+.ap-panel-status.none {
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+}
+
+.ap-panel-status.open {
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+}
+
+.ap-panel-status.hub {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+}
+
+.ap-panel-status.branch {
+    background: #fefce8;
+    border: 1px solid #fde68a;
+}
+
+.ap-panel-status-label {
+    font-size: 12px;
+    color: #64748b;
+    letter-spacing: 1px;
+}
+
+.ap-panel-status-value {
+    font-size: 15px;
+    font-weight: bold;
+}
+
+.ap-panel-status.none   .ap-panel-status-value { color: #64748b; }
+.ap-panel-status.open   .ap-panel-status-value { color: #2b5ce6; }
+.ap-panel-status.hub    .ap-panel-status-value { color: #16a34a; }
+.ap-panel-status.branch .ap-panel-status-value { color: #ca8a04; }
+
+/* --- 机场面板 · 动作按钮 --- */
+.ap-action-btn {
+    display: block;
+    width: 100%;
+    padding: 12px 0;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+    font-weight: bold;
+    letter-spacing: 1px;
+    cursor: pointer;
+    color: #ffffff;
+    transition: background 0.15s, color 0.15s;
+    margin-top: 4px;
+}
+
+.ap-action-btn.open-btn {
+    background: #2b5ce6;
+}
+.ap-action-btn.open-btn:hover { background: #1e4ed4; }
+.ap-action-btn.open-btn:active { background: #1740b8; }
+
+.ap-action-btn.hub-btn {
+    background: #16a34a;
+}
+.ap-action-btn.hub-btn:hover { background: #15803d; }
+.ap-action-btn.hub-btn:active { background: #166534; }
+
+.ap-action-btn.branch-btn {
+    background: #eab308;
+    color: #422006;
+}
+.ap-action-btn.branch-btn:hover { background: #ca8a04; color: #ffffff; }
+.ap-action-btn.branch-btn:active { background: #a16207; color: #ffffff; }
+
+.ap-action-btn:disabled {
+    background: #cbd5e1;
+    color: #94a3b8;
+    cursor: not-allowed;
+}
+
+.ap-action-btn:disabled:hover,
+.ap-action-btn:disabled:active {
+    background: #cbd5e1;
+    color: #94a3b8;
+}
+
+/* --- 机场动作确认框 --- */
+.airport-action-modal {
+    max-width: 400px;
+    max-height: 520px;
+}
+
+.ap-confirm-info {
+    background: #f8fafc;
+    border: 1px solid #eef2f7;
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin-bottom: 18px;
+}
+
+.ap-confirm-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 6px 0;
+    font-size: 13px;
+    color: #64748b;
+}
+
+.ap-confirm-row:last-child {
+    border-top: 1px solid #e2e8f0;
+    margin-top: 6px;
+    padding-top: 12px;
+}
+
+.ap-confirm-row b {
+    font-size: 14px;
+    color: #1e293b;
+    font-weight: 600;
+}
+
+.ap-confirm-row.total b {
+    font-size: 18px;
+    color: #dc2626;
+    font-weight: bold;
+}
+
+/* 确认按钮颜色变体（绿 / 黄，默认蓝沿用现有 .confirm-btn.ok） */
+.confirm-btn.ok.green {
+    background: #16a34a;
+    border-color: #16a34a;
+}
+.confirm-btn.ok.green:hover {
+    background: #15803d;
+    border-color: #15803d;
+}
+
+.confirm-btn.ok.yellow {
+    background: #eab308;
+    border-color: #eab308;
+    color: #422006;
+}
+.confirm-btn.ok.yellow:hover {
+    background: #ca8a04;
+    border-color: #ca8a04;
+    color: #ffffff;
+}
+/* ========== 机场分级 · 副基地 / 基地 ========== */
+
+/* 状态块：橙 / 红 */
+.ap-panel-status.subbase {
+    background: #fff7ed;
+    border: 1px solid #fed7aa;
+}
+
+.ap-panel-status.subbase .ap-panel-status-value {
+    color: #ea580c;
+}
+
+.ap-panel-status.hq {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+}
+
+.ap-panel-status.hq .ap-panel-status-value {
+    color: #dc2626;
+}
+
+/* 状态块加顶部间距（修指数和状态打挤） */
+.ap-panel-status {
+    margin-top: 14px;
+}
+
+/* 动作按钮：橙 / 红 */
+.ap-action-btn.subbase-btn {
+    background: #f97316;
+}
+.ap-action-btn.subbase-btn:hover { background: #ea580c; }
+.ap-action-btn.subbase-btn:active { background: #c2410c; }
+
+.ap-action-btn.hq-btn {
+    background: #dc2626;
+}
+.ap-action-btn.hq-btn:hover { background: #b91c1c; }
+.ap-action-btn.hq-btn:active { background: #991b1b; }
+
+/* 确认按钮：橙 / 红 */
+.confirm-btn.ok.orange {
+    background: #f97316;
+    border-color: #f97316;
+}
+.confirm-btn.ok.orange:hover {
+    background: #ea580c;
+    border-color: #ea580c;
+}
+
+.confirm-btn.ok.red {
+    background: #dc2626;
+    border-color: #dc2626;
+}
+.confirm-btn.ok.red:hover {
+    background: #b91c1c;
+    border-color: #b91c1c;
+}
+
+/* ========== 航班动态栏 · 运送人数 ========== */
+
+.fb-pax {
+    color: #1e293b;
+    font-weight: 600;
+    font-family: -apple-system, "PingFang SC", sans-serif;
+    font-size: 11px;
+    flex-shrink: 0;
+}
+
+.fb-pax .unit {
+    font-size: 10px;
+    color: #94a3b8;
+    font-weight: 400;
+    margin-left: 1px;
+}
+/* ========== 飞机定检 ========== */
+
+/* 飞机卡片状态：待检修（红）/ 检修中（橙） */
+.fleet-card .fc-status.pending {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.fleet-card .fc-status.maint {
+    background: #ffedd5;
+    color: #ea580c;
+}
+
+/* 飞机详情 · 维修区块 */
+.pd-maint-box {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+}
+
+.pd-maint-box.maint {
+    background: #fff7ed;
+    border-color: #fed7aa;
+}
+
+.pd-maint-title {
+    font-size: 13px;
+    font-weight: bold;
+    color: #dc2626;
+    margin-bottom: 8px;
+    letter-spacing: 0.5px;
+}
+
+.pd-maint-box.maint .pd-maint-title {
+    color: #ea580c;
+}
+
+.pd-maint-desc {
+    font-size: 12px;
+    color: #64748b;
+    line-height: 1.6;
+    margin-bottom: 10px;
+}
+
+.pd-maint-desc b {
+    color: #1e293b;
+    font-weight: 600;
+}
+
+.pd-maint-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.pd-maint-btn {
+    flex: 1;
+    padding: 9px 0;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-family: inherit;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: background 0.15s;
+    color: #ffffff;
+    white-space: nowrap;
+}
+
+.pd-maint-btn.send {
+    background: #2b5ce6;
+}
+.pd-maint-btn.send:hover { background: #1e4ed4; }
+.pd-maint-btn.send:active { background: #1740b8; }
+
+.pd-maint-btn.retire {
+    background: #ffffff;
+    color: #dc2626;
+    border: 1px solid #dc2626;
+}
+.pd-maint-btn.retire:hover { background: #fef2f2; }
+.pd-maint-btn.retire:active { background: #fee2e2; }
+
+.pd-maint-btn:disabled {
+    background: #cbd5e1;
+    color: #94a3b8;
+    border-color: #cbd5e1;
+    cursor: not-allowed;
+}
+
+/* ========== 360000X 隐藏模式 ========== */
+
+/* 隐藏地图上的飞机图标 */
+.hide-planes .plane-marker {
+    display: none;
+}
+
+/* 隐藏动态栏里的文字（框保留） */
+.hide-events {
+    visibility: hidden;
+}

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <rect width="32" height="32" rx="7" fill="#0d2b4e"/>
+  <defs>
+    <linearGradient id="weTL" gradientUnits="userSpaceOnUse" x1="12" y1="18" x2="4" y2="30">
+      <stop offset="0%" stop-color="#7aa7ff" stop-opacity="0.95"/>
+      <stop offset="60%" stop-color="#5b8def" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#5b8def" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <path fill="url(#weTL)" d="M 9.8 16.5 Q 3 20, 4 30 Q 6 21, 13.5 17 Z"/>
+  <g transform="translate(19 13) rotate(60) scale(0.9) translate(-12 -10)">
+    <path fill="#ffffff" d="M12 1 L13.5 9 L21 14 L21 15.5 L13.5 13 L13 18 L15 20 L15 21 L12 20 L9 21 L9 20 L11 18 L10.5 13 L3 15.5 L3 14 L10.5 9 Z"/>
+  </g>
+</svg>

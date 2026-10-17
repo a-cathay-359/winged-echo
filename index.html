@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>翼掠惊鸿</title>
 
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="style.css" />
 </head>
@@ -129,17 +130,8 @@
 
                 <div id="toast" class="toast"></div>
 
-                <div id="buy-overlay" class="overlay" onclick="if(event.target===this) closeBuyModal()">
-                    <div class="buy-modal">
-                        <div class="modal-header">
-                            <span>购买飞机</span>
-                            <span class="modal-close" onclick="closeBuyModal()">✕</span>
-                        </div>
-                        <div class="modal-body">
-                            <div id="buy-list"></div>
-                        </div>
-                    </div>
-                </div>
+                <!-- 购买飞机遮罩（仅地图区） -->
+                <div id="buy-dim" class="buy-dim" onclick="onBuyDimClick(event)"></div>
 
                 <div id="route-overlay" class="overlay" onclick="if(event.target===this) closeRouteModal()">
                     <div class="buy-modal">
@@ -199,8 +191,9 @@
                                 <div class="picker-field">
                                     <label class="naming-label">出发机场</label>
                                     <div class="custom-select">
-                                        <div class="cs-trigger" id="rp-from-trigger" onclick="toggleRoutePickerDropdown('from', event)">
-                                            <span class="cs-value cs-placeholder" id="rp-from-value">请选择</span>
+                                        <div class="cs-trigger" id="rp-from-trigger">
+                                            <input type="text" class="cs-input" id="rp-from-input"
+                                                   placeholder="请选择" autocomplete="off" spellcheck="false">
                                             <svg class="cs-arrow" viewBox="0 0 10 6"><path d="M0 0 L5 6 L10 0 Z" fill="#94a3b8"/></svg>
                                         </div>
                                         <div class="cs-list" id="rp-from-list"></div>
@@ -212,8 +205,9 @@
                                 <div class="picker-field">
                                     <label class="naming-label">到达机场</label>
                                     <div class="custom-select">
-                                        <div class="cs-trigger" id="rp-to-trigger" onclick="toggleRoutePickerDropdown('to', event)">
-                                            <span class="cs-value cs-placeholder" id="rp-to-value">请选择</span>
+                                        <div class="cs-trigger" id="rp-to-trigger">
+                                            <input type="text" class="cs-input" id="rp-to-input"
+                                                   placeholder="请选择" autocomplete="off" spellcheck="false">
                                             <svg class="cs-arrow" viewBox="0 0 10 6"><path d="M0 0 L5 6 L10 0 Z" fill="#94a3b8"/></svg>
                                         </div>
                                         <div class="cs-list" id="rp-to-list"></div>
@@ -274,14 +268,51 @@
 
                                 <label class="naming-label naming-label-second">停放机场</label>
                                 <div class="custom-select" id="home-select">
-                                    <div class="cs-trigger" onclick="toggleHomeDropdown(event)">
-                                        <span class="cs-value cs-placeholder" id="home-select-value">请选择机场</span>
+                                    <div class="cs-trigger" id="home-select-trigger">
+                                        <input type="text" class="cs-input" id="home-select-input"
+                                               placeholder="请选择机场" autocomplete="off" spellcheck="false">
                                         <svg class="cs-arrow" viewBox="0 0 10 6"><path d="M0 0 L5 6 L10 0 Z" fill="#94a3b8"/></svg>
                                     </div>
                                     <div class="cs-list" id="home-select-list"></div>
                                 </div>
 
                                 <button class="naming-confirm" id="naming-confirm-btn" onclick="confirmBuy(this)" disabled>确认购买</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="sell-plane-overlay" class="overlay" onclick="if(event.target===this) closeSellConfirm()">
+                    <div class="buy-modal sell-modal">
+                        <div class="modal-header">
+                            <span>确认出售</span>
+                            <span class="modal-close" onclick="closeSellConfirm()">✕</span>
+                        </div>
+                        <div class="modal-body">
+                            <div class="confirm-text" id="sell-confirm-text">确定要出售这架飞机吗？</div>
+
+                            <div class="sell-info-box">
+                                <div class="sell-info-row">
+                                    <span>飞机</span>
+                                    <b id="sell-info-name">—</b>
+                                </div>
+                                <div class="sell-info-row">
+                                    <span>机型</span>
+                                    <b id="sell-info-type">—</b>
+                                </div>
+                                <div class="sell-info-row">
+                                    <span>机龄</span>
+                                    <b id="sell-info-age">—</b>
+                                </div>
+                                <div class="sell-info-row total">
+                                    <span>回收价</span>
+                                    <b id="sell-info-price">—</b>
+                                </div>
+                            </div>
+
+                            <div class="confirm-actions">
+                                <button class="confirm-btn cancel" onclick="closeSellConfirm()">取消</button>
+                                <button class="confirm-btn ok" onclick="confirmSellPlane()">确认出售</button>
                             </div>
                         </div>
                     </div>
@@ -323,6 +354,16 @@
                     </div>
                 </div>
 
+                <div id="airport-action-overlay" class="overlay" onclick="if(event.target===this) closeAirportAction()">
+                    <div class="buy-modal airport-action-modal">
+                        <div class="modal-header">
+                            <span id="ap-action-title">确认</span>
+                            <span class="modal-close" onclick="closeAirportAction()">✕</span>
+                        </div>
+                        <div class="modal-body" id="ap-action-body"></div>
+                    </div>
+                </div>
+
                 <div id="plane-detail-overlay" class="overlay" onclick="if(event.target===this) closePlaneDetail()">
                     <div class="buy-modal">
                         <div class="modal-header">
@@ -334,7 +375,51 @@
                                 <div class="pd-name" id="pd-name">—</div>
                                 <div class="pd-sub" id="pd-sub">—</div>
                             </div>
-                            <div id="pd-content"></div>
+
+                            <!-- 运营 -->
+                            <div class="pd-section">
+                                <div class="pd-section-title">运营</div>
+                                <div class="pd-row"><span>基地</span><b id="pd-home">—</b></div>
+                                <div class="pd-row"><span>状态</span><b id="pd-status">—</b></div>
+                                <div class="pd-row"><span>机龄</span><b id="pd-age">—</b></div>
+                                <div class="pd-row"><span>飞行小时</span><b id="pd-fh">—</b></div>
+                                <div class="pd-row"><span>距下次定检</span><b id="pd-nextcheck">—</b></div>
+                                <div class="pd-row"><span>位置</span><b id="pd-loc">—</b></div>
+                            </div>
+
+                            <!-- 本趟（仅运营中显示） -->
+                            <div class="pd-section" id="pd-live-section" style="display:none;">
+                                <div class="pd-section-title">本趟</div>
+                                <div class="pd-row"><span>乘坐人数</span><b id="pd-pax">—</b></div>
+                                <div class="pd-row"><span>上座率</span><b id="pd-lf" class="highlight">—</b></div>
+                            </div>
+
+                            <!-- 时刻表（仅运营中显示） -->
+                            <div class="pd-section" id="pd-schedule-section" style="display:none;">
+                                <div class="pd-section-title">时刻表</div>
+                                <div class="pd-row"><span>当前航线</span><b id="pd-route">—</b></div>
+                                <div class="pd-row"><span>每天班次</span><b id="pd-flights">—</b></div>
+                                <div class="pd-row"><span>首班时间</span><b id="pd-firstdep">—</b></div>
+                            </div>
+
+                            <!-- 维修（有待检修/检修中时显示） -->
+                            <div class="pd-section" id="pd-maint-section" style="display:none;">
+                                <div class="pd-section-title">维修</div>
+                                <div id="pd-maint-content"></div>
+                            </div>
+
+                            <!-- 参数 -->
+                            <div class="pd-section">
+                                <div class="pd-section-title">参数</div>
+                                <div class="pd-row"><span>座位数</span><b id="pd-seats">—</b></div>
+                                <div class="pd-row"><span>巡航速度</span><b id="pd-speed">—</b></div>
+                                <div class="pd-row"><span>航程</span><b id="pd-range">—</b></div>
+                                <div class="pd-row"><span>最大起飞重量</span><b id="pd-mtow">—</b></div>
+                                <div class="pd-row"><span>最大载重</span><b id="pd-payload">—</b></div>
+                                <div class="pd-row"><span>燃油容量</span><b id="pd-fuel">—</b></div>
+                                <div class="pd-row"><span>巡航油耗</span><b id="pd-burn">—</b></div>
+                                <div class="pd-row"><span>购买价</span><b id="pd-price">—</b></div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -354,8 +439,9 @@
 
                             <label class="form-label">航线</label>
                             <div class="custom-select">
-                                <div class="cs-trigger" id="sch-route-trigger" onclick="toggleScheduleDropdown(event)">
-                                    <span class="cs-value cs-placeholder" id="sch-route-value">请选择航线</span>
+                                <div class="cs-trigger" id="sch-route-trigger">
+                                    <input type="text" class="cs-input" id="sch-route-input"
+                                           placeholder="请选择航线" autocomplete="off" spellcheck="false">
                                     <svg class="cs-arrow" viewBox="0 0 10 6"><path d="M0 0 L5 6 L10 0 Z" fill="#94a3b8"/></svg>
                                 </div>
                                 <div class="cs-list" id="sch-route-list"></div>
@@ -489,12 +575,13 @@
             <button class="pause-btn" id="pause-btn" onclick="togglePause()">⏸ 暂停</button>
 
             <div class="speed-group">
-                <button class="speed-seg" data-speed="1"    onclick="setGameSpeed(1)">1X</button>
-                <button class="speed-seg" data-speed="2"    onclick="setGameSpeed(2)">2X</button>
-                <button class="speed-seg" data-speed="30"   onclick="setGameSpeed(30)">30X</button>
-                <button class="speed-seg" data-speed="360"  onclick="setGameSpeed(360)">360X</button>
-                <button class="speed-seg" data-speed="1800" onclick="setGameSpeed(1800)">1800X</button>
-                <button class="speed-seg" data-speed="3600" onclick="setGameSpeed(3600)">3600X</button>
+                <button class="speed-seg" data-speed="1"      onclick="setGameSpeed(1)">1X</button>
+                <button class="speed-seg" data-speed="2"      onclick="setGameSpeed(2)">2X</button>
+                <button class="speed-seg" data-speed="30"     onclick="setGameSpeed(30)">30X</button>
+                <button class="speed-seg" data-speed="360"    onclick="setGameSpeed(360)">360X</button>
+                <button class="speed-seg" data-speed="1800"   onclick="setGameSpeed(1800)">1800X</button>
+                <button class="speed-seg" data-speed="3600"   onclick="setGameSpeed(3600)">3600X</button>
+                <button class="speed-seg" data-speed="360000" onclick="setGameSpeed(360000)">360000X</button>
             </div>
 
             <div class="bottom-spacer"></div>
@@ -503,9 +590,9 @@
         </div>
     </div>
 
-    <!-- ========== 存档系统弹窗（独立于 game-page，启动页也能弹） ========== -->
+    <!-- ========== 存档系统弹窗 ========== -->
 
-    <div id="save-list-overlay" class="overlay overlay--full" onclick="if(event.target===this) closeSaveList()">
+    <div id="save-list-overlay" class="overlay overlay--dynamic" onclick="if(event.target===this) closeSaveList()">
         <div class="buy-modal">
             <div class="modal-header">
                 <span>读取存档</span>
@@ -515,7 +602,7 @@
         </div>
     </div>
 
-    <div id="save-naming-overlay" class="overlay overlay--full" onclick="if(event.target===this) closeSaveNaming()">
+    <div id="save-naming-overlay" class="overlay overlay--dynamic" onclick="if(event.target===this) closeSaveNaming()">
         <div class="buy-modal naming-modal">
             <div class="modal-header">
                 <span>命名存档</span>
@@ -540,7 +627,7 @@
         </div>
     </div>
 
-    <div id="save-del-confirm-overlay" class="overlay overlay--full" onclick="if(event.target===this) closeDelConfirm()">
+    <div id="save-del-confirm-overlay" class="overlay overlay--dynamic" onclick="if(event.target===this) closeDelConfirm()">
         <div class="buy-modal confirm-modal">
             <div class="modal-header">
                 <span>确认删除</span>
@@ -559,7 +646,7 @@
         </div>
     </div>
 
-    <div id="save-del-verify-overlay" class="overlay overlay--full" onclick="if(event.target===this) closeDelVerify()">
+    <div id="save-del-verify-overlay" class="overlay overlay--dynamic" onclick="if(event.target===this) closeDelVerify()">
         <div class="buy-modal save-del-verify-modal">
             <div class="modal-header">
                 <span>安全验证</span>
@@ -581,6 +668,27 @@
                     <button class="confirm-btn cancel" onclick="closeDelVerify()">取消</button>
                     <button class="confirm-btn ok" onclick="confirmDelSave()">确认删除</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== 购买飞机弹窗 ========== -->
+
+    <div id="buy-modal-shell" class="buy-modal-shell">
+        <div class="buy-modal">
+            <div class="modal-header">
+                <span class="mh-title">购买飞机</span>
+                <div class="mh-right">
+                    <div class="buy-mode-group">
+                        <button class="buy-mode-seg active" data-mode="card" onclick="setBuyMode('card', event)">卡片</button>
+                        <button class="buy-mode-seg" data-mode="table" onclick="setBuyMode('table', event)">表格</button>
+                    </div>
+                    <span class="modal-close" onclick="closeBuyModal()">✕</span>
+                </div>
+            </div>
+            <div class="modal-body" id="buy-modal-body">
+                <div id="buy-list-card" class="buy-list"></div>
+                <div id="buy-list-table" class="buy-list"></div>
             </div>
         </div>
     </div>

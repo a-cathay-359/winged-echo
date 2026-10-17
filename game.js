@@ -40,12 +40,13 @@ let todayStats = {
 
 let airlineReputation = 50;
 
+// 机场分级状态：{ PEK: 'open', ... }
+let airportStates = {};
+
 let overlayZCounter = 100;
 
-// 当前存档 ID（null = 尚未命名，存档时会弹命名框）
 let currentSaveId = null;
 
-// 删除流程的临时状态
 let pendingDelId = null;
 
 // ==================== 工具函数 ====================
@@ -135,7 +136,7 @@ function renderAirlinePanel() {
     if (routesEl) routesEl.textContent = routes.length + ' 条';
 
     const activeCount = gameState.fleet.filter(function (p) {
-        return !!p.schedule;
+        return !!p.schedule && !p.pendingCheck && !(p.maintenanceUntilMs > 0);
     }).length;
     if (activeEl) activeEl.textContent = activeCount + ' 架';
 
@@ -266,8 +267,24 @@ function saveAirlineEdit(btn) {
 
 // ==================== 弹窗管理 ====================
 
+function getOverlayContainer() {
+    const gamePage = document.getElementById('game-page');
+    if (gamePage && gamePage.classList.contains('active')) {
+        return document.querySelector('.main-area');
+    }
+    return document.getElementById('start-page');
+}
+
 function openOverlay(id) {
     const el = document.getElementById(id);
+
+    if (el.classList.contains('overlay--dynamic')) {
+        const container = getOverlayContainer();
+        if (container && el.parentNode !== container) {
+            container.appendChild(el);
+        }
+    }
+
     el.style.zIndex = overlayZCounter++;
     el.classList.add('active');
     refreshOverlayDim();
@@ -280,7 +297,7 @@ function closeOverlay(id) {
 
 function refreshOverlayDim() {
     const actives = Array.prototype.slice.call(
-        document.querySelectorAll('.overlay.active')
+        document.querySelectorAll('.overlay.active, .buy-dim.active')
     );
 
     actives.sort(function (a, b) {
@@ -472,6 +489,15 @@ function bootGame(loadData, saveId) {
                 type: p.type,
                 home: p.home,
                 schedule: p.schedule || null,
+                purchaseTimeMs: p.purchaseTimeMs || GAME_START_MS,
+                // 定检字段（老档兜底）
+                totalFh: p.totalFh || 0,
+                nextACheckFh: p.nextACheckFh || 300,
+                nextCCheckFh: p.nextCCheckFh || 3000,
+                nextDCheckFh: p.nextDCheckFh || 10000,
+                maintenanceUntilMs: p.maintenanceUntilMs || 0,
+                pendingCheck: p.pendingCheck || null,
+                lastCheckLevel: null,
                 _marker: null,
                 _state: null
             };
@@ -494,6 +520,14 @@ function bootGame(loadData, saveId) {
             todayStats.flights = loadData.todayStats.flights || 0;
             todayStats.revenue = loadData.todayStats.revenue || 0;
         }
+
+        airportStates = loadData.airportStates || {};
+
+        gameState.fleet.forEach(function (p) {
+            if (p.home) airportStates[p.home] = 'branch';
+        });
+    } else {
+        airportStates = {};
     }
 
     updateMoneyDisplay();
@@ -520,6 +554,8 @@ function bootGame(loadData, saveId) {
         } else {
             startTimeSystem();
         }
+
+        refreshAllAirportDots();
 
         rebuildAllPlaneMarkers();
         updatePlanesPosition();
@@ -636,6 +672,14 @@ function startTimeSystem(initMs, initSpeed, initPaused) {
 function setGameSpeed(speed) {
     gameSpeed = speed;
     if (gamePaused) gamePaused = false;
+
+    // 360000X：隐藏飞机 + 隐藏动态栏文字
+    var hideIt = (speed === 360000);
+    var mainArea = document.querySelector('.main-area');
+    var flightList = document.getElementById('flight-list');
+    if (mainArea) mainArea.classList.toggle('hide-planes', hideIt);
+    if (flightList) flightList.classList.toggle('hide-events', hideIt);
+
     updateSpeedButtons();
 }
 
@@ -661,7 +705,7 @@ function updateSpeedButtons() {
 // ==================== 存档系统 ====================
 
 const SAVES_KEY = 'wingedEcho.saves.v1';
-const SAVE_VERSION = 6;
+const SAVE_VERSION = 7;
 
 // ---------- 存储层 ----------
 
@@ -721,12 +765,21 @@ function buildSaveData() {
                 name: p.name,
                 type: p.type,
                 home: p.home,
-                schedule: p.schedule || null
+                schedule: p.schedule || null,
+                purchaseTimeMs: p.purchaseTimeMs || GAME_START_MS,
+                // 定检字段
+                totalFh: p.totalFh || 0,
+                nextACheckFh: p.nextACheckFh || 300,
+                nextCCheckFh: p.nextCCheckFh || 3000,
+                nextDCheckFh: p.nextDCheckFh || 10000,
+                maintenanceUntilMs: p.maintenanceUntilMs || 0,
+                pendingCheck: p.pendingCheck || null
             };
         }),
         routes: routes.map(function (r) {
             return { from: r.from, to: r.to };
         }),
+        airportStates: airportStates,
         gameSpeed: gameSpeed,
         gamePaused: gamePaused
     };
@@ -745,7 +798,6 @@ function saveGame() {
         return s.id === currentSaveId;
     });
 
-    // 当前档已被删（理论上不该发生），当新档处理
     if (idx < 0) {
         currentSaveId = null;
         openSaveNaming();
@@ -941,6 +993,9 @@ function doLoadSave(id) {
 function applySaveData(data) {
     if (!gameMap) return;
 
+    // 先关掉详情弹窗（防定时器泄漏）
+    if (typeof closePlaneDetail === 'function') closePlaneDetail();
+
     gameState.money = data.money;
     gameState.fleet = (data.fleet || []).map(function (p) {
         return {
@@ -948,6 +1003,15 @@ function applySaveData(data) {
             type: p.type,
             home: p.home,
             schedule: p.schedule || null,
+            purchaseTimeMs: p.purchaseTimeMs || GAME_START_MS,
+            // 定检字段（老档兜底）
+            totalFh: p.totalFh || 0,
+            nextACheckFh: p.nextACheckFh || 300,
+            nextCCheckFh: p.nextCCheckFh || 3000,
+            nextDCheckFh: p.nextDCheckFh || 10000,
+            maintenanceUntilMs: p.maintenanceUntilMs || 0,
+            pendingCheck: p.pendingCheck || null,
+            lastCheckLevel: null,
             _marker: null,
             _state: null
         };
@@ -971,6 +1035,12 @@ function applySaveData(data) {
         todayStats.revenue = data.todayStats.revenue || 0;
     }
 
+    airportStates = data.airportStates || {};
+
+    gameState.fleet.forEach(function (p) {
+        if (p.home) airportStates[p.home] = 'branch';
+    });
+
     updateMoneyDisplay();
     renderFleet();
     renderAirlinePanel();
@@ -982,6 +1052,7 @@ function applySaveData(data) {
         if (from && to) drawRoute(from, to, true);
     });
 
+    refreshAllAirportDots();
     rebuildAllPlaneMarkers();
 
     startTimeSystem(data.gameTimeMs, data.gameSpeed, data.gamePaused);
@@ -1080,7 +1151,6 @@ function confirmDelSave() {
         return;
     }
 
-    // 如果删的是当前正在玩的档，解绑
     if (currentSaveId === pendingDelId) {
         currentSaveId = null;
     }
