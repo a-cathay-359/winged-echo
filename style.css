@@ -2975,3 +2975,738 @@ body {
 .hide-events {
     visibility: hidden;
 }
+/* ========== 员工与破产 ========== */
+.lp-val.red { color: #dc2626; }
+
+.bankrupt-overlay {
+    background: rgba(0, 0, 0, 0.85); /* 深色遮罩 */
+    z-index: 9999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+}
+
+.bankrupt-overlay.active {
+    display: flex;
+}
+
+.bankrupt-modal {
+    background: transparent;
+    text-align: center;
+    animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes popIn {
+    0% { transform: scale(0.8); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.bankrupt-title {
+    font-size: 72px;
+    font-weight: 900;
+    color: #dc2626;
+    letter-spacing: 12px;
+    margin-bottom: 20px;
+    text-shadow: 0 0 20px rgba(220, 38, 38, 0.6);
+    font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+
+.bankrupt-desc {
+    font-size: 18px;
+    color: #cbd5e1;
+    letter-spacing: 2px;
+    margin-bottom: 40px;
+}
+
+.bankrupt-btn {
+    background: #2b5ce6;
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-family: inherit;
+    font-weight: bold;
+    letter-spacing: 4px;
+    padding: 12px 48px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.bankrupt-btn:hover {
+    background: #1e4ed4;
+    transform: scale(1.05);
+}
+/* ========== 客舱配置 UI ========== */
+
+.cabin-config-box {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 14px;
+    margin-top: 0; /* 修改：去掉原本的 18px，因为上面加了 Label 自带 margin-bottom */
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+}
+
+.cabin-config-header {
+    display: flex;
+    justify-content: flex-end; /* 修改：去掉左侧标题后，让排数靠右对齐 */
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.cabin-config-space {
+    font-size: 12px;
+    color: #64748b;
+    font-weight: 500;
+}
+
+/* 可视化长条 */
+.cabin-viz {
+    display: flex;
+    height: 16px;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 14px;
+    border: 1px solid #cbd5e1;
+    background: #e2e8f0;
+}
+
+.cabin-viz-seg {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    font-weight: bold;
+    color: #fff;
+    transition: width 0.1s;
+}
+
+/* 舱位列表 */
+.cabin-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 14px;
+}
+
+.cabin-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 10px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+}
+
+.cabin-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+}
+
+.cabin-name {
+    font-size: 13px;
+    font-weight: bold;
+}
+
+.cabin-meta {
+    font-size: 10px;
+    color: #94a3b8;
+}
+
+.cabin-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.cabin-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: none;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f1f5f9;
+    color: #475569;
+    transition: transform 0.1s;
+    touch-action: manipulation;
+}
+
+.cabin-btn.plus {
+    background: #eef2ff;
+    color: #2b5ce6;
+}
+
+.cabin-btn:active:not(:disabled) {
+    transform: scale(0.9);
+}
+
+.cabin-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.cabin-val {
+    width: 28px;
+    text-align: center;
+    font-size: 15px;
+    font-weight: bold;
+    color: #1e293b;
+    font-variant-numeric: tabular-nums;
+}
+
+/* 汇总区 */
+.cabin-summary {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 10px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.cs-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #64748b;
+}
+
+.cs-row b {
+    font-size: 14px;
+    color: #1e293b;
+}
+
+.cs-row b.hl {
+    color: #2b5ce6;
+    font-size: 15px;
+}
+/* ========== 二手飞机市场 ========== */
+
+/* 二手卡片特殊标识：左侧黄边 */
+.plane-card.is-used {
+    border-left: 4px solid #eab308;
+    background: #ffffff;
+}
+
+/* 价格区域 */
+.pc-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+}
+
+.pc-price-box {
+    text-align: right;
+}
+
+.pc-orig-price {
+    font-size: 11px;
+    color: #94a3b8;
+    text-decoration: line-through;
+    margin-left: 4px;
+}
+
+/* 数据格 */
+.pc-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    font-size: 12px;
+    color: #475569;
+    margin-bottom: 12px;
+    background: #f8fafc;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #eef2f7;
+}
+
+.stat-item {
+    display: flex;
+    justify-content: space-between;
+}
+
+.stat-val {
+    font-weight: 600;
+    color: #1e293b;
+    font-variant-numeric: tabular-nums;
+}
+
+.stat-val.warn { color: #dc2626; } /* 定检危险 */
+.stat-val.good { color: #16a34a; } /* 定检健康 */
+
+/* 客舱布局小标签 */
+.pc-layout {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+}
+
+.layout-tag {
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+}
+
+.layout-tag.P { background: #f3e8ff; color: #7e22ce; }
+.layout-tag.F { background: #fee2e2; color: #dc2626; }
+.layout-tag.C { background: #ffedd5; color: #ea580c; }
+.layout-tag.W { background: #e0f2fe; color: #0ea5e9; }
+.layout-tag.Y { background: #dbeafe; color: #2563eb; }
+
+/* ========== 二手飞机市场 ========== */
+
+/* 二手卡片特殊标识：左侧黄边 */
+.plane-card.is-used {
+    border-left: 4px solid #eab308;
+    background: #ffffff;
+}
+
+/* 价格区域 */
+.pc-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+}
+
+.pc-price-box {
+    text-align: right;
+}
+
+.pc-orig-price {
+    font-size: 11px;
+    color: #94a3b8;
+    text-decoration: line-through;
+    margin-left: 4px;
+}
+
+/* 数据格 */
+.pc-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    font-size: 12px;
+    color: #475569;
+    margin-bottom: 12px;
+    background: #f8fafc;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #eef2f7;
+}
+
+.stat-item {
+    display: flex;
+    justify-content: space-between;
+}
+
+.stat-val {
+    font-weight: 600;
+    color: #1e293b;
+    font-variant-numeric: tabular-nums;
+}
+
+.stat-val.warn { color: #dc2626; } /* 定检危险 */
+.stat-val.good { color: #16a34a; } /* 定检健康 */
+
+/* 客舱布局小标签 */
+.pc-layout {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+}
+
+.layout-tag {
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+}
+
+.layout-tag.P { background: #f3e8ff; color: #7e22ce; }
+.layout-tag.F { background: #fee2e2; color: #dc2626; }
+.layout-tag.C { background: #ffedd5; color: #ea580c; }
+.layout-tag.W { background: #e0f2fe; color: #0ea5e9; }
+.layout-tag.Y { background: #dbeafe; color: #2563eb; }
+
+/* 购买按钮（修复黑坨坨，统一样式） */
+.btn-buy {
+    width: 100%;
+    padding: 8px 0;
+    background: #2b5ce6;
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: inherit;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.btn-buy:hover { background: #1e4ed4; }
+.btn-buy:active { background: #1740b8; }
+
+/* ========== 客舱配置 UI 调整 ========== */
+
+.cabin-config-box {
+    margin-top: 0; /* 去掉原本的 18px，因为上面加了标准 Label 自带 margin-bottom */
+}
+
+.cabin-config-header {
+    justify-content: flex-end; /* 去掉左侧标题后，让排数靠右对齐 */
+}
+
+/* 隐藏原有的标题样式 */
+.cabin-config-title {
+    display: none;
+}
+/* ========== 存档系统 · 导入导出扩展 ========== */
+
+/* 导出按钮（天蓝色） */
+.sc-btn.export {
+    background: #0ea5e9;
+}
+.sc-btn.export:hover { background: #0284c7; }
+.sc-btn.export:active { background: #0369a1; }
+
+/* 读档弹窗底部操作栏 */
+.modal-footer {
+    padding: 12px 16px;
+    border-top: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: flex-end;
+    flex-shrink: 0;
+    background: #f8fafc;
+}
+
+/* 导入按钮 */
+.import-btn {
+    background: #ffffff;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 13px;
+    font-family: inherit;
+    font-weight: 500;
+    padding: 6px 14px;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.import-btn:hover {
+    background: #f1f5f9;
+    color: #1e293b;
+    border-color: #94a3b8;
+}
+/* ========== 财务中心与贷款面板 ========== */
+
+/* 左侧面板新增负债/月供文字 */
+.lp-row .lp-val.red {
+    color: #dc2626;
+}
+
+/* 财务面板弹窗基础 */
+.finance-modal {
+    max-width: 480px;
+    max-height: 600px;
+    height: 85vh;
+}
+
+/* 财务汇总区 */
+.finance-summary {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1px;
+    background: #e2e8f0;
+    border-bottom: 1px solid #e2e8f0;
+    flex-shrink: 0;
+}
+
+.fs-item {
+    background: #f8fafc;
+    padding: 14px 10px;
+    text-align: center;
+}
+
+.fs-label {
+    font-size: 11px;
+    color: #64748b;
+    margin-bottom: 6px;
+    letter-spacing: 1px;
+}
+
+.fs-value {
+    font-size: 16px;
+    font-weight: bold;
+    font-variant-numeric: tabular-nums;
+}
+
+.fs-value.green { color: #16a34a; }
+.fs-value.red { color: #dc2626; }
+.fs-value.blue { color: #2b5ce6; }
+
+/* 流水列表 */
+.finance-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 16px;
+    background: #ffffff;
+}
+
+.finance-list::-webkit-scrollbar { width: 6px; }
+.finance-list::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+
+.fl-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 0;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.fl-row:last-child { border-bottom: none; }
+
+.fl-left { display: flex; flex-direction: column; gap: 4px; }
+.fl-desc { font-size: 13px; color: #1e293b; font-weight: 500; }
+.fl-time { font-size: 11px; color: #94a3b8; font-variant-numeric: tabular-nums; }
+
+.fl-amount {
+    font-size: 15px;
+    font-weight: bold;
+    font-variant-numeric: tabular-nums;
+}
+.fl-amount.income { color: #16a34a; }
+.fl-amount.expense { color: #dc2626; }
+
+/* 财务面板底部 */
+.finance-footer {
+    padding: 12px 16px;
+    border-top: 1px solid #e2e8f0;
+    background: #f8fafc;
+    display: flex;
+    justify-content: flex-end;
+    flex-shrink: 0;
+}
+
+.btn-loan {
+    background: #2b5ce6;
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 20px;
+    font-size: 13px;
+    font-weight: bold;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.btn-loan:hover { background: #1e4ed4; }
+
+/* 贷款面板内容 */
+.loan-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.loan-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.loan-label {
+    font-size: 13px;
+    color: #475569;
+    font-weight: 500;
+    display: flex;
+    justify-content: space-between;
+}
+
+.loan-label span.max {
+    color: #2b5ce6;
+    font-weight: bold;
+}
+
+.loan-input-wrap {
+    display: flex;
+    align-items: center;
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 10px 14px;
+}
+
+.loan-input-wrap:focus-within {
+    border-color: #2b5ce6;
+    background: #ffffff;
+}
+
+.loan-input-wrap input {
+    flex: 1;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 20px;
+    font-weight: bold;
+    color: #1e293b;
+    font-family: inherit;
+}
+
+.loan-slider {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 6px;
+    border-radius: 3px;
+    background: #e2e8f0;
+    outline: none;
+}
+
+.loan-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #2b5ce6;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(43,92,230,0.4);
+}
+
+.term-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+}
+
+.term-btn {
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 10px 0;
+    font-size: 13px;
+    color: #475569;
+    font-family: inherit;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.15s;
+}
+
+.term-btn:hover { background: #f1f5f9; }
+.term-btn.active {
+    background: #eef2ff;
+    border-color: #2b5ce6;
+    color: #2b5ce6;
+    font-weight: bold;
+}
+
+.loan-preview {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: auto;
+}
+
+.lp-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    color: #64748b;
+}
+
+.lp-row b {
+    color: #1e293b;
+    font-size: 14px;
+    font-variant-numeric: tabular-nums;
+}
+
+.lp-row.total {
+    border-top: 1px solid #e2e8f0;
+    padding-top: 10px;
+    margin-top: 4px;
+}
+
+.lp-row.total b {
+    color: #dc2626;
+    font-size: 18px;
+}
+
+.loan-footer {
+    padding: 12px 16px;
+    border-top: 1px solid #e2e8f0;
+    background: #f8fafc;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+.btn-cancel {
+    background: #ffffff;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 8px 16px;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.btn-confirm {
+    background: #dc2626;
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 20px;
+    font-size: 13px;
+    font-weight: bold;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.btn-confirm:hover { background: #b91c1c; }
+.btn-cancel:hover { background: #f1f5f9; }
+
+.fade-in { animation: fadeIn 0.2s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+.hidden { display: none !important; }
+
+/* 修正财务/贷款弹窗尺寸，回归标准买飞机弹窗的视觉比例 */
+.finance-modal {
+    max-width: 560px; /* 和买飞机弹窗一样宽 */
+    max-height: 460px; /* 和买飞机弹窗一样高 */
+    height: 100%; /* 配合 max-height 使用 */
+    display: flex;
+    flex-direction: column;
+}

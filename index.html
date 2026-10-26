@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>翼掠惊鸿</title>
 
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
@@ -66,7 +66,8 @@
                 <svg class="top-logo-icon" width="48" height="48"><use href="#we-logo"/></svg>
                 <span>翼掠惊鸿</span>
             </div>
-            <div class="top-money">
+            <!-- 顶栏资金面板触发 -->
+            <div class="top-money" onclick="openFinancePanel()" style="cursor: pointer;">
                 <span class="money-icon">¥</span>
                 <span class="money-value" id="money-value">10.00</span>
                 <span class="money-unit">亿</span>
@@ -103,6 +104,15 @@
                         <span>声誉</span>
                         <span class="lp-val rep-yellow" id="lp-reputation">50.00%</span>
                     </div>
+                    <div class="lp-row">
+                        <span>员工</span>
+                        <span class="lp-val" id="lp-staff">70 人</span>
+                    </div>
+                    <!-- 新增：总负债 -->
+                    <div class="lp-row">
+                        <span>总负债</span>
+                        <span class="lp-val red" id="lp-debt">-¥0</span>
+                    </div>
                 </div>
 
                 <div class="lp-section">
@@ -114,6 +124,15 @@
                     <div class="lp-row">
                         <span>收入</span>
                         <span class="lp-val green" id="lp-today-revenue">¥0</span>
+                    </div>
+                    <div class="lp-row">
+                        <span>月薪</span>
+                        <span class="lp-val red" id="lp-salary">-¥175万</span>
+                    </div>
+                    <!-- 新增：月供 -->
+                    <div class="lp-row">
+                        <span>月供</span>
+                        <span class="lp-val red" id="lp-monthly">-¥0</span>
                     </div>
                 </div>
             </div>
@@ -130,7 +149,6 @@
 
                 <div id="toast" class="toast"></div>
 
-                <!-- 购买飞机遮罩（仅地图区） -->
                 <div id="buy-dim" class="buy-dim" onclick="onBuyDimClick(event)"></div>
 
                 <div id="route-overlay" class="overlay" onclick="if(event.target===this) closeRouteModal()">
@@ -266,6 +284,92 @@
                                     autocomplete="off"
                                 >
 
+                                <!-- 客舱布局（抽离出标准 Label，灰框保留） -->
+                                <label class="naming-label naming-label-second">客舱布局</label>
+                                <div class="cabin-config-box" id="cabin-config-box">
+                                    <div class="cabin-config-header">
+                                        <span class="cabin-config-space" id="cabin-space-display">已用 30 / 30 排</span>
+                                    </div>
+                                    
+                                    <!-- 机身可视长条 -->
+                                    <div class="cabin-viz" id="cabin-viz"></div>
+
+                                    <!-- 五个舱位 -->
+                                    <div class="cabin-list">
+                                        <!-- P -->
+                                        <div class="cabin-row">
+                                            <div class="cabin-info">
+                                                <div class="cabin-name" style="color:#7e22ce;">豪华头等 (P)</div>
+                                                <div class="cabin-meta">占 4 排 · <span id="cabin-meta-p">2座/排</span></div>
+                                            </div>
+                                            <div class="cabin-controls">
+                                                <button type="button" class="cabin-btn minus" id="cabin-btn-p-minus" disabled>-</button>
+                                                <div class="cabin-val" id="cabin-val-p">0</div>
+                                                <button type="button" class="cabin-btn plus" id="cabin-btn-p-plus">+</button>
+                                            </div>
+                                        </div>
+                                        <!-- F -->
+                                        <div class="cabin-row">
+                                            <div class="cabin-info">
+                                                <div class="cabin-name" style="color:#dc2626;">头等舱 (F)</div>
+                                                <div class="cabin-meta">占 3 排 · <span id="cabin-meta-f">2座/排</span></div>
+                                            </div>
+                                            <div class="cabin-controls">
+                                                <button type="button" class="cabin-btn minus" id="cabin-btn-f-minus" disabled>-</button>
+                                                <div class="cabin-val" id="cabin-val-f">0</div>
+                                                <button type="button" class="cabin-btn plus" id="cabin-btn-f-plus">+</button>
+                                            </div>
+                                        </div>
+                                        <!-- C -->
+                                        <div class="cabin-row">
+                                            <div class="cabin-info">
+                                                <div class="cabin-name" style="color:#ea580c;">商务舱 (C)</div>
+                                                <div class="cabin-meta">占 2 排 · <span id="cabin-meta-c">4座/排</span></div>
+                                            </div>
+                                            <div class="cabin-controls">
+                                                <button type="button" class="cabin-btn minus" id="cabin-btn-c-minus" disabled>-</button>
+                                                <div class="cabin-val" id="cabin-val-c">0</div>
+                                                <button type="button" class="cabin-btn plus" id="cabin-btn-c-plus">+</button>
+                                            </div>
+                                        </div>
+                                        <!-- W -->
+                                        <div class="cabin-row">
+                                            <div class="cabin-info">
+                                                <div class="cabin-name" style="color:#0ea5e9;">超经舱 (W)</div>
+                                                <div class="cabin-meta">占 1.5 排 · <span id="cabin-meta-w">6座/排</span></div>
+                                            </div>
+                                            <div class="cabin-controls">
+                                                <button type="button" class="cabin-btn minus" id="cabin-btn-w-minus" disabled>-</button>
+                                                <div class="cabin-val" id="cabin-val-w">0</div>
+                                                <button type="button" class="cabin-btn plus" id="cabin-btn-w-plus">+</button>
+                                            </div>
+                                        </div>
+                                        <!-- Y -->
+                                        <div class="cabin-row">
+                                            <div class="cabin-info">
+                                                <div class="cabin-name" style="color:#2563eb;">经济舱 (Y)</div>
+                                                <div class="cabin-meta">占 1 排 · <span id="cabin-meta-y">6座/排</span></div>
+                                            </div>
+                                            <div class="cabin-controls">
+                                                <button type="button" class="cabin-btn minus" id="cabin-btn-y-minus">-</button>
+                                                <div class="cabin-val" id="cabin-val-y">30</div>
+                                                <button type="button" class="cabin-btn plus" id="cabin-btn-y-plus">+</button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="cabin-summary">
+                                        <div class="cs-row">
+                                            <span>总座位数</span>
+                                            <b id="cabin-total-seats">180 座</b>
+                                        </div>
+                                        <div class="cs-row">
+                                            <span>单趟收益指数</span>
+                                            <b class="hl" id="cabin-rev-index">180</b>
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <label class="naming-label naming-label-second">停放机场</label>
                                 <div class="custom-select" id="home-select">
                                     <div class="cs-trigger" id="home-select-trigger">
@@ -376,7 +480,6 @@
                                 <div class="pd-sub" id="pd-sub">—</div>
                             </div>
 
-                            <!-- 运营 -->
                             <div class="pd-section">
                                 <div class="pd-section-title">运营</div>
                                 <div class="pd-row"><span>基地</span><b id="pd-home">—</b></div>
@@ -387,14 +490,12 @@
                                 <div class="pd-row"><span>位置</span><b id="pd-loc">—</b></div>
                             </div>
 
-                            <!-- 本趟（仅运营中显示） -->
                             <div class="pd-section" id="pd-live-section" style="display:none;">
                                 <div class="pd-section-title">本趟</div>
                                 <div class="pd-row"><span>乘坐人数</span><b id="pd-pax">—</b></div>
                                 <div class="pd-row"><span>上座率</span><b id="pd-lf" class="highlight">—</b></div>
                             </div>
 
-                            <!-- 时刻表（仅运营中显示） -->
                             <div class="pd-section" id="pd-schedule-section" style="display:none;">
                                 <div class="pd-section-title">时刻表</div>
                                 <div class="pd-row"><span>当前航线</span><b id="pd-route">—</b></div>
@@ -402,13 +503,11 @@
                                 <div class="pd-row"><span>首班时间</span><b id="pd-firstdep">—</b></div>
                             </div>
 
-                            <!-- 维修（有待检修/检修中时显示） -->
                             <div class="pd-section" id="pd-maint-section" style="display:none;">
                                 <div class="pd-section-title">维修</div>
                                 <div id="pd-maint-content"></div>
                             </div>
 
-                            <!-- 参数 -->
                             <div class="pd-section">
                                 <div class="pd-section-title">参数</div>
                                 <div class="pd-row"><span>座位数</span><b id="pd-seats">—</b></div>
@@ -487,6 +586,14 @@
                     </div>
                 </div>
 
+                <div id="bankrupt-overlay" class="overlay bankrupt-overlay" onclick="if(event.target===this) return;">
+                    <div class="bankrupt-modal">
+                        <h1 class="bankrupt-title">你破产了</h1>
+                        <p class="bankrupt-desc">剩余资产不够发放本月工资，请再接再厉</p>
+                        <button class="bankrupt-btn" onclick="confirmBankrupt()">确认</button>
+                    </div>
+                </div>
+
                 <div id="admin-pass-overlay" class="overlay" onclick="if(event.target===this) closeAdminPass()">
                     <div class="buy-modal admin-modal">
                         <div class="modal-header">
@@ -530,6 +637,86 @@
                                 >
                                 <button class="naming-confirm" id="admin-money-btn" onclick="submitAdminMoney(this)">保存</button>
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ========== 财务面板弹窗 ========== -->
+                <div id="finance-overlay" class="overlay" onclick="if(event.target===this) closeFinancePanel()">
+                    <div class="buy-modal finance-modal">
+                        <div class="modal-header">
+                            <span>财务中心</span>
+                            <span class="modal-close" onclick="closeFinancePanel()">✕</span>
+                        </div>
+                        
+                        <!-- 汇总区 -->
+                        <div class="finance-summary">
+                            <div class="fs-item">
+                                <div class="fs-label">总收入</div>
+                                <div class="fs-value green" id="finance-total-income">¥ 0</div>
+                            </div>
+                            <div class="fs-item">
+                                <div class="fs-label">总支出</div>
+                                <div class="fs-value red" id="finance-total-expense">¥ 0</div>
+                            </div>
+                            <div class="fs-item">
+                                <div class="fs-label">当前余额</div>
+                                <div class="fs-value blue" id="finance-total-balance">¥ 0</div>
+                            </div>
+                        </div>
+
+                        <!-- 流水列表 -->
+                        <div class="finance-list" id="finance-list">
+                            <!-- JS 渲染 -->
+                        </div>
+
+                        <!-- 底部 -->
+                        <div class="finance-footer">
+                            <button class="btn-loan" onclick="showLoanPanel()">申请贷款</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ========== 贷款面板弹窗 ========== -->
+                <div id="loan-overlay" class="overlay" onclick="if(event.target===this) closeLoanPanel()">
+                    <div class="buy-modal finance-modal">
+                        <div class="modal-header">
+                            <span>申请贷款</span>
+                            <span class="modal-close" onclick="closeLoanPanel()">✕</span>
+                        </div>
+                        
+                        <div class="loan-body">
+                            <div class="loan-group">
+                                <div class="loan-label">
+                                    <span>贷款金额 (亿)</span>
+                                    <span class="max" id="loan-max-label">当前最高可借：100.00 亿</span>
+                                </div>
+                                <div class="loan-input-wrap">
+                                    <input type="text" inputmode="decimal" id="loan-amount-input" value="10.00" oninput="onAmountInput(this.value)">
+                                </div>
+                                <input type="range" class="loan-slider" id="loan-amount-slider" min="0.01" max="100" step="0.01" value="10" oninput="syncLoanFromSlider(this.value)">
+                            </div>
+
+                            <div class="loan-group">
+                                <div class="loan-label">还款期限</div>
+                                <div class="term-group">
+                                    <button class="term-btn active" data-term="12" onclick="setLoanTerm(12)">12 个月</button>
+                                    <button class="term-btn" data-term="24" onclick="setLoanTerm(24)">24 个月</button>
+                                    <button class="term-btn" data-term="36" onclick="setLoanTerm(36)">36 个月</button>
+                                </div>
+                            </div>
+
+                            <div class="loan-preview">
+                                <div class="lp-row"><span>贷款本金</span><b id="lp-principal">10.00 亿</b></div>
+                                <div class="lp-row"><span>月利率</span><b id="lp-rate">0.80%</b></div>
+                                <div class="lp-row total"><span>每月需还 (等额本息)</span><b id="lp-monthly">¥ 0.88 亿</b></div>
+                                <div class="lp-row"><span>总利息</span><b id="lp-interest">¥ 0.50 亿</b></div>
+                            </div>
+                        </div>
+
+                        <div class="loan-footer">
+                            <button class="btn-cancel" onclick="closeLoanPanel()">取消</button>
+                            <button class="btn-confirm" onclick="confirmLoan()">确认借款</button>
                         </div>
                     </div>
                 </div>
@@ -599,6 +786,14 @@
                 <span class="modal-close" onclick="closeSaveList()">✕</span>
             </div>
             <div class="modal-body" id="save-list-body"></div>
+            <!-- 新增：底部导入操作栏 -->
+            <div class="modal-footer" id="save-import-footer">
+                <input type="file" id="save-import-file" accept=".json" style="display: none;" onchange="handleFileImport(event)">
+                <button class="import-btn" onclick="triggerImport()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                    导入本地存档
+                </button>
+            </div>
         </div>
     </div>
 
@@ -679,6 +874,12 @@
             <div class="modal-header">
                 <span class="mh-title">购买飞机</span>
                 <div class="mh-right">
+                    <!-- 新增：全新/二手切换 -->
+                    <div class="buy-mode-group" id="source-mode-group">
+                        <button class="buy-mode-seg active" data-source="new" onclick="setBuySource('new', event)">全新</button>
+                        <button class="buy-mode-seg" data-source="used" onclick="setBuySource('used', event)">二手</button>
+                    </div>
+                    <!-- 原有的：卡片/表格切换 -->
                     <div class="buy-mode-group">
                         <button class="buy-mode-seg active" data-mode="card" onclick="setBuyMode('card', event)">卡片</button>
                         <button class="buy-mode-seg" data-mode="table" onclick="setBuyMode('table', event)">表格</button>

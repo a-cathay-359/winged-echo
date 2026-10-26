@@ -30,17 +30,25 @@ let rpToSelectCtrl = null;
 let schRouteSelectCtrl = null;
 
 let buyMode = 'card';
+let buySource = 'new';
 let buySortKey = 'mtow';
 let buySortAsc = true;
 let buySwitchLock = false;
 
 let pendingSellIdx = -1;
+let selectedUsedPlaneIdx = -1;
 
 let apActionIata = null;
 let apActionTarget = null;
 
 let planeDetailIdx = -1;
 let planeDetailTimer = null;
+
+// 客舱配置相关
+let currentCabinConfig = { P: 0, F: 0, C: 0, W: 0, Y: 0 };
+let currentCabinMaxRows = 30;
+let cabinHoldTimer = null;
+let cabinHoldInterval = null;
 
 // ==================== 定检常量 ====================
 
@@ -125,7 +133,6 @@ function isUnderMaintenance(plane) {
     return !!plane.pendingCheck || plane.maintenanceUntilMs > 0;
 }
 
-// 找下一级触发信息
 function getNextCheckInfo(plane) {
     if (!plane) return null;
 
@@ -145,7 +152,6 @@ function getNextCheckInfo(plane) {
     return { level: level, remain: remain };
 }
 
-// 落地时：累加 FH + 检查越线
 function accumulateFh(plane, hours) {
     if (!plane) return;
 
@@ -181,18 +187,14 @@ function accumulateFh(plane, hours) {
     }
 }
 
-// 推进阈值（在送检时立刻调用）
-// A/C/D 各只跟自己的周期和 totalFh 有关，浅级跳到"totalFh 之后第一个浅级点"
 function advanceCheckThresholds(plane, level) {
     var curFh = plane.totalFh;
 
     if (level === 'A') {
         plane.nextACheckFh += CHECK_INTERVAL.A;
-
     } else if (level === 'C') {
         plane.nextCCheckFh += CHECK_INTERVAL.C;
         plane.nextACheckFh = (Math.floor(curFh / CHECK_INTERVAL.A) + 1) * CHECK_INTERVAL.A;
-
     } else if (level === 'D') {
         plane.nextDCheckFh += CHECK_INTERVAL.D;
         plane.nextCCheckFh = (Math.floor(curFh / CHECK_INTERVAL.C) + 1) * CHECK_INTERVAL.C;
@@ -200,7 +202,6 @@ function advanceCheckThresholds(plane, level) {
     }
 }
 
-// 送检
 function startMaintenance(planeIdx) {
     var plane = gameState.fleet[planeIdx];
     if (!plane) return;
@@ -214,8 +215,7 @@ function startMaintenance(planeIdx) {
         return;
     }
 
-    gameState.money -= cost;
-    updateMoneyDisplay();
+    changeMoney(-cost, `定检维修 (${plane.name})`);
 
     advanceCheckThresholds(plane, level);
 
@@ -231,10 +231,9 @@ function startMaintenance(planeIdx) {
     renderFleet();
     refreshPlaneDetailLive();
 
-    showToast(plane.name + ' 已送检 · -¥' + formatMoneyShort(cost));
+    showToast(plane.name + ' 已送检 · -¥' + formatMoneyShort(cost).replace('¥', ''));
 }
 
-// 退役（仅 D 检时可选）
 function retirePlane(planeIdx) {
     var plane = gameState.fleet[planeIdx];
     if (!plane) return;
@@ -250,14 +249,13 @@ function retirePlane(planeIdx) {
     }
 
     gameState.fleet.splice(planeIdx, 1);
-    gameState.money += value;
-    updateMoneyDisplay();
+    changeMoney(value, `退役回收 (${planeName})`);
 
     closePlaneDetail();
     renderFleet();
     renderAirlinePanel();
 
-    showToast('已退役 ' + planeName + ' · +¥' + formatMoneyShort(value));
+    showToast('已退役 ' + planeName + ' · +¥' + formatMoneyShort(value).replace('¥', ''));
 }
 
 // ---------- 机场分级 ----------
@@ -317,6 +315,20 @@ function getNextAirportState(state) {
     if (state === 'branch') return 'subbase';
     if (state === 'subbase') return 'hq';
     return null;
+}
+
+// ---------- 客舱逻辑辅助 ----------
+
+function getPlaneTotalSeats(plane) {
+    if (!plane || !plane.cabin) return 0;
+    const ac = getAircraftData(plane.type);
+    let total = 0;
+    for (let k in plane.cabin) {
+        if (ac.seatsPerRow[k]) {
+            total += plane.cabin[k] * ac.seatsPerRow[k];
+        }
+    }
+    return total;
 }
 
 // ==================== 可搜索下拉 ====================
@@ -385,9 +397,7 @@ function createSearchSelect(config) {
         selectedKey = key;
         selectedText = found.displayText;
         inputEl.value = selectedText;
-
         closeList();
-
         if (config.onSelect) config.onSelect(key);
     }
 
@@ -403,7 +413,6 @@ function createSearchSelect(config) {
         isOpen = false;
         triggerEl.classList.remove('open');
         listEl.classList.remove('open');
-
         if (selectedKey !== null) {
             inputEl.value = selectedText;
         } else {
@@ -563,8 +572,7 @@ function calcRouteCapacity(fromIata, toIata) {
         const match = (s.from === fromIata && s.to === toIata) ||
                       (s.from === toIata && s.to === fromIata);
         if (!match) return;
-        const ac = getAircraftData(plane.type);
-        total += s.flightsPerDay * ac.seatCapacity;
+        total += s.flightsPerDay * getPlaneTotalSeats(plane);
     });
     return total;
 }
@@ -963,8 +971,8 @@ function openAirportPanel(iata) {
         actionHtml =
             '<button class="ap-action-btn ' + btnCls + '"' + (ok ? '' : ' disabled') +
             ' onclick="openAirportAction(\'' + iata + '\', \'' + nextState + '\')">' +
-                (ok ? btnText + ' · ¥' + formatMoneyShort(fee)
-                    : '资金不足 · 需 ¥' + formatMoneyShort(fee)) +
+                (ok ? btnText + ' · ¥' + formatMoneyShort(fee).replace('¥', '')
+                    : '资金不足 · 需 ¥' + formatMoneyShort(fee).replace('¥', '')) +
             '</button>';
     }
 
@@ -975,13 +983,10 @@ function openAirportPanel(iata) {
             '<div class="ap-panel-name">' + airport.name + '</div>' +
             '<div class="ap-panel-code">' + airport.iata + '</div>' +
         '</div>' +
-
         '<div class="ap-panel-grid">' +
             '<div class="ap-panel-item">' +
                 '<div class="ap-panel-label">年旅客吞吐量</div>' +
-                '<div class="ap-panel-value">' + throughputStr +
-                    '<span class="unit">万人次</span>' +
-                '</div>' +
+                '<div class="ap-panel-value">' + throughputStr + '<span class="unit">万人次</span></div>' +
             '</div>' +
             '<div class="ap-panel-item">' +
                 '<div class="ap-panel-label">飞行区等级</div>' +
@@ -989,26 +994,21 @@ function openAirportPanel(iata) {
             '</div>' +
             '<div class="ap-panel-item">' +
                 '<div class="ap-panel-label">距市区</div>' +
-                '<div class="ap-panel-value">' + airport.distance +
-                    '<span class="unit">km</span>' +
-                '</div>' +
+                '<div class="ap-panel-value">' + airport.distance + '<span class="unit">km</span></div>' +
             '</div>' +
             '<div class="ap-panel-item">' +
                 '<div class="ap-panel-label">海拔类型</div>' +
                 '<div class="ap-panel-value">' + altitudeStr + '</div>' +
             '</div>' +
         '</div>' +
-
         '<div class="ap-panel-index">' +
             '<div class="ap-panel-index-label">机场指数</div>' +
             '<div class="ap-panel-index-value">' + indexStr + '</div>' +
         '</div>' +
-
         '<div class="ap-panel-status ' + state + '">' +
             '<span class="ap-panel-status-label">通航状态</span>' +
             '<span class="ap-panel-status-value">' + stateName + '</span>' +
         '</div>' +
-
         actionHtml;
 
     openOverlay('airport-panel-overlay');
@@ -1052,7 +1052,7 @@ function openAirportAction(iata, targetState) {
         '<div class="ap-confirm-info">' +
             '<div class="ap-confirm-row"><span>机场</span><b>' + airport.name + '</b></div>' +
             '<div class="ap-confirm-row"><span>吞吐量</span><b>' + airport.throughput.toLocaleString('en-US') + ' 万</b></div>' +
-            '<div class="ap-confirm-row total"><span>' + (targetState === 'open' ? '通航费' : '升级费') + '</span><b>¥ ' + formatMoneyShort(fee) + '</b></div>' +
+            '<div class="ap-confirm-row total"><span>' + (targetState === 'open' ? '通航费' : '升级费') + '</span><b>¥ ' + formatMoneyShort(fee).replace('¥', '') + '</b></div>' +
         '</div>' +
         '<div class="confirm-actions">' +
             '<button class="confirm-btn cancel" onclick="closeAirportAction()">取消</button>' +
@@ -1084,14 +1084,13 @@ function confirmAirportAction() {
         return;
     }
 
-    gameState.money -= fee;
     setAirportState(apActionIata, apActionTarget);
-
-    updateMoneyDisplay();
-    refreshAirportDot(apActionIata);
-
     var targetName = getAirportStateName(apActionTarget);
     var apName = airport.name;
+
+    changeMoney(-fee, `开通/升级机场：${apName} ${targetName}`);
+
+    refreshAirportDot(apActionIata);
 
     closeAirportAction();
     closeAirportPanel();
@@ -1114,7 +1113,7 @@ function openPlaneDetail(planeIdx) {
     document.getElementById('pd-name').textContent = plane.name;
     const cat = ac.wakeCategory || 'M';
     document.getElementById('pd-sub').innerHTML =
-        ac.displayName + ' · ' + ac.seatCapacity + ' 座' +
+        ac.displayName + ' · ' + getPlaneTotalSeats(plane) + ' 座' +
         ' <span class="pd-cat ' + cat + '">' + cat + '</span>';
 
     const homeAirport = AIRPORT_GCJ.find(function (a) {
@@ -1126,7 +1125,7 @@ function openPlaneDetail(planeIdx) {
     const mtowTon = Math.round(ac.mtow / 1000);
     const priceYi = (ac.newPrice / 100000000).toFixed(1);
 
-    document.getElementById('pd-seats').textContent = ac.seatCapacity + ' 座';
+    document.getElementById('pd-seats').textContent = getPlaneTotalSeats(plane) + ' 座';
     document.getElementById('pd-speed').textContent = ac.cruiseSpeed + ' km/h';
     document.getElementById('pd-range').textContent = ac.range + ' km';
     document.getElementById('pd-mtow').textContent = mtowTon + ' 吨';
@@ -1147,7 +1146,6 @@ function openPlaneDetail(planeIdx) {
         document.getElementById('pd-route').textContent = routeName;
         document.getElementById('pd-flights').textContent = sched.flightsPerDay + ' 趟';
         document.getElementById('pd-firstdep').textContent = minToHHMM(sched.firstDepartMin || 0);
-
         document.getElementById('pd-schedule-section').style.display = '';
     } else {
         document.getElementById('pd-schedule-section').style.display = 'none';
@@ -1197,8 +1195,7 @@ function refreshPlaneDetailLive() {
         var info = getNextCheckInfo(plane);
         if (info) {
             var remainStr = Math.max(0, Math.round(info.remain)).toLocaleString('en-US');
-            document.getElementById('pd-nextcheck').textContent =
-                info.level + ' 检 · ' + remainStr + ' h';
+            document.getElementById('pd-nextcheck').textContent = info.level + ' 检 · ' + remainStr + ' h';
         } else {
             document.getElementById('pd-nextcheck').textContent = '—';
         }
@@ -1258,7 +1255,7 @@ function renderMaintenanceSection(plane, planeIdx) {
         var retireValue = Math.round(getPlaneResaleValue(plane) * 0.6);
         retireHtml =
             '<button class="pd-maint-btn retire" onclick="retirePlane(' + planeIdx + ')">' +
-                '退役 · +¥' + formatMoneyShort(retireValue) +
+                '退役 · +¥' + formatMoneyShort(retireValue).replace('¥', '') +
             '</button>';
     }
 
@@ -1266,13 +1263,12 @@ function renderMaintenanceSection(plane, planeIdx) {
         '<div class="pd-maint-box">' +
             '<div class="pd-maint-title">需要 ' + level + ' 检</div>' +
             '<div class="pd-maint-desc">' +
-                desc + '<br>' +
-                '费用：<b>¥ ' + formatMoneyShort(cost) + '</b>' +
+                desc + '<br>费用：<b>¥ ' + formatMoneyShort(cost).replace('¥', '') + '</b>' +
             '</div>' +
             '<div class="pd-maint-actions">' +
                 '<button class="pd-maint-btn send"' + (canAfford ? '' : ' disabled') +
                     ' onclick="startMaintenance(' + planeIdx + ')">' +
-                    (canAfford ? '送检 · ¥' + formatMoneyShort(cost) : '资金不足') +
+                    (canAfford ? '送检 · ¥' + formatMoneyShort(cost).replace('¥', '') : '资金不足') +
                 '</button>' +
                 retireHtml +
             '</div>' +
@@ -1300,24 +1296,24 @@ function getPlaneCurrentLoad(plane) {
     const roundIdx = Math.floor(localElapsed / dur.roundMin);
     const roundElapsed = localElapsed - roundIdx * dur.roundMin;
 
-    const ac = getAircraftData(plane.type);
-    let lf = null;
+    let totalPax = 0;
+    let totalSeats = getPlaneTotalSeats(plane);
 
     if (roundElapsed < dur.flightMin) {
-        lf = plane._lfOutbound;
+        if (plane._paxOutbound !== undefined) totalPax = plane._paxOutbound;
+        else return null;
     } else if (roundElapsed < dur.flightMin + dur.turnTo) {
         return null;
     } else if (roundElapsed < 2 * dur.flightMin + dur.turnTo) {
-        lf = plane._lfReturn;
+        if (plane._paxReturn !== undefined) totalPax = plane._paxReturn;
+        else return null;
     } else {
         return null;
     }
 
-    if (lf === undefined || lf === null) return null;
-
     return {
-        pax: Math.round(ac.seatCapacity * lf),
-        lf: lf
+        pax: totalPax,
+        lf: totalSeats > 0 ? (totalPax / totalSeats) : 0
     };
 }
 
@@ -1341,27 +1337,19 @@ function buildRouteDemandHTML(demand) {
         '<div class="route-demand-grid">' +
             '<div class="rd-item">' +
                 '<div class="rd-label">航距</div>' +
-                '<div class="rd-value">' + Math.round(demand.distance) +
-                    '<span class="unit">km</span>' +
-                '</div>' +
+                '<div class="rd-value">' + Math.round(demand.distance) + '<span class="unit">km</span></div>' +
             '</div>' +
             '<div class="rd-item">' +
                 '<div class="rd-label">日均客流</div>' +
-                '<div class="rd-value rd-highlight">' + Math.round(demand.total) +
-                    '<span class="unit">人次</span>' +
-                '</div>' +
+                '<div class="rd-value rd-highlight">' + Math.round(demand.total) + '<span class="unit">人次</span></div>' +
             '</div>' +
             '<div class="rd-item">' +
                 '<div class="rd-label">旅游客流</div>' +
-                '<div class="rd-value">' + Math.round(demand.tourism) +
-                    '<span class="unit">人次</span>' +
-                '</div>' +
+                '<div class="rd-value">' + Math.round(demand.tourism) + '<span class="unit">人次</span></div>' +
             '</div>' +
             '<div class="rd-item">' +
                 '<div class="rd-label">商务客流</div>' +
-                '<div class="rd-value">' + Math.round(demand.business) +
-                    '<span class="unit">人次</span>' +
-                '</div>' +
+                '<div class="rd-value">' + Math.round(demand.business) + '<span class="unit">人次</span></div>' +
             '</div>' +
         '</div>'
     );
@@ -1456,11 +1444,9 @@ function confirmRoute(btn) {
             return;
         }
 
-        gameState.money -= openFee;
-        updateMoneyDisplay();
+        changeMoney(-openFee, `开通航线：${from.iata}-${to.iata}`);
 
         drawRoute(from, to);
-
         addReputation(openFee / 100000000);
 
         setAirportSelected(from, false);
@@ -1544,7 +1530,7 @@ function renderFleet() {
                     '</div>' +
                 '</div>' +
                 '<div class="fc-info">' +
-                    data.displayName + ' · ' + data.seatCapacity + ' 座' +
+                    data.displayName + ' · ' + getPlaneTotalSeats(plane) + ' 座' +
                 '</div>' +
                 '<div class="fc-actions">' +
                     '<button class="fleet-btn schedule" data-plane-idx="' + idx + '" onclick="fleetSchedule(this)">时刻表</button>' +
@@ -1595,7 +1581,7 @@ function openSellConfirm(planeIdx) {
 
     document.getElementById('sell-info-name').textContent = plane.name;
     document.getElementById('sell-info-type').textContent =
-        ac.displayName + ' · ' + ac.seatCapacity + ' 座';
+        ac.displayName + ' · ' + getPlaneTotalSeats(plane) + ' 座';
     document.getElementById('sell-info-age').textContent = formatPlaneAge(plane);
     document.getElementById('sell-info-price').textContent =
         '¥ ' + (value / 100000000).toFixed(2) + ' 亿';
@@ -1637,8 +1623,7 @@ function confirmSellPlane() {
 
     gameState.fleet.splice(pendingSellIdx, 1);
 
-    gameState.money += value;
-    updateMoneyDisplay();
+    changeMoney(value, `出售飞机 (${planeName})`);
 
     pendingSellIdx = -1;
 
@@ -1647,7 +1632,7 @@ function confirmSellPlane() {
     renderFleet();
     renderAirlinePanel();
 
-    showToast('已出售 ' + planeName + ' · +¥' + formatMoneyShort(value));
+    showToast('已出售 ' + planeName + ' · +¥' + formatMoneyShort(value).replace('¥', ''));
 }
 
 // ==================== 购买飞机 · 双模式 ====================
@@ -1660,16 +1645,18 @@ function openBuyModal(btn) {
         btn.classList.remove('pressed');
 
         buyMode = 'card';
+        buySource = 'new';
         buySwitchLock = false;
 
-        document.querySelectorAll('.buy-mode-seg').forEach(function (b) {
+        document.querySelectorAll('.buy-mode-seg[data-source]').forEach(function (b) {
+            b.classList.toggle('active', b.getAttribute('data-source') === 'new');
+        });
+        document.querySelectorAll('.buy-mode-seg[data-mode]').forEach(function (b) {
             b.classList.toggle('active', b.getAttribute('data-mode') === 'card');
         });
 
-        renderCardList();
+        renderBuyList();
 
-        document.getElementById('buy-list-card').style.display = 'flex';
-        document.getElementById('buy-list-table').style.display = 'none';
         document.getElementById('buy-modal-body').style.opacity = '1';
 
         var dim = document.getElementById('buy-dim');
@@ -1679,10 +1666,18 @@ function openBuyModal(btn) {
         shell.style.zIndex = overlayZCounter++;
 
         dim.classList.add('active');
+        dim.classList.remove('no-dim'); // 强制移出透明状态
         shell.classList.add('active');
 
         layoutBuyModal('card', false);
     }, 200);
+}
+
+// 修复报错：点击购买飞机背景遮罩关闭弹窗
+function onBuyDimClick(event) {
+    if (event.target.id === 'buy-dim') {
+        closeBuyModal();
+    }
 }
 
 function closeBuyModal() {
@@ -1737,6 +1732,18 @@ function layoutBuyModal(mode, animate) {
     }
 }
 
+function setBuySource(source, event) {
+    if (event) event.stopPropagation();
+    if (buySource === source) return;
+    buySource = source;
+    
+    document.querySelectorAll('.buy-mode-seg[data-source]').forEach(function (b) {
+        b.classList.toggle('active', b.getAttribute('data-source') === source);
+    });
+    
+    renderBuyList();
+}
+
 function setBuyMode(mode, event) {
     if (event) event.stopPropagation();
     if (buySwitchLock) return;
@@ -1745,25 +1752,15 @@ function setBuyMode(mode, event) {
     buySwitchLock = true;
     buyMode = mode;
 
-    document.querySelectorAll('.buy-mode-seg').forEach(function (b) {
+    document.querySelectorAll('.buy-mode-seg[data-mode]').forEach(function (b) {
         b.classList.toggle('active', b.getAttribute('data-mode') === mode);
     });
 
     var body = document.getElementById('buy-modal-body');
-
     body.style.opacity = '0';
 
     setTimeout(function () {
-        if (mode === 'card') {
-            renderCardList();
-            document.getElementById('buy-list-card').style.display = 'flex';
-            document.getElementById('buy-list-table').style.display = 'none';
-        } else {
-            renderTableList();
-            document.getElementById('buy-list-card').style.display = 'none';
-            document.getElementById('buy-list-table').style.display = 'flex';
-        }
-
+        renderBuyList();
         layoutBuyModal(mode, true);
 
         setTimeout(function () {
@@ -1772,6 +1769,21 @@ function setBuyMode(mode, event) {
         }, 100);
     }, 160);
 }
+
+function renderBuyList() {
+    document.getElementById('buy-list-card').style.display = (buyMode === 'card') ? 'flex' : 'none';
+    document.getElementById('buy-list-table').style.display = (buyMode === 'table') ? 'flex' : 'none';
+
+    if (buySource === 'new') {
+        if (buyMode === 'card') renderCardList();
+        else renderTableList();
+    } else {
+        if (buyMode === 'card') renderUsedCardList();
+        else renderUsedTableList();
+    }
+}
+
+// ==================== 全新飞机渲染 ====================
 
 function renderCardList() {
     var list = document.getElementById('buy-list-card');
@@ -1783,6 +1795,7 @@ function renderCardList() {
         const canAfford = gameState.money >= ac.newPrice;
         const priceYi = (ac.newPrice / 100000000).toFixed(1);
         const mtowTon = Math.round(ac.mtow / 1000);
+        const maxSeats = ac.maxRows * ac.seatsPerRow.Y;
 
         html +=
             '<div class="plane-card">' +
@@ -1795,7 +1808,7 @@ function renderCardList() {
                     '<span>📦 最大载重：' + ac.maxPayload + ' 吨</span>' +
                     '<span>⛽ 燃油容量：' + ac.fuelCapacity + ' 升</span>' +
                     '<span>🔥 巡航油耗：' + ac.cruiseFuelBurn + ' 升/千米</span>' +
-                    '<span>💺 座位数：' + ac.seatCapacity + ' 座</span>' +
+                    '<span>💺 最大座位数：' + maxSeats + ' 座</span>' +
                 '</div>' +
                 '<button class="pc-buy" data-type="' + ac.shortName + '"' +
                     (canAfford ? '' : ' disabled') +
@@ -1810,7 +1823,6 @@ function renderCardList() {
 
 function getSortedAircraft() {
     var arr = Object.values(AIRCRAFT_DATA).slice();
-
     arr.sort(function (a, b) {
         var va, vb;
         if (buySortKey === 'displayName') {
@@ -1821,14 +1833,13 @@ function getSortedAircraft() {
         vb = b[buySortKey];
         return buySortAsc ? (va - vb) : (vb - va);
     });
-
     return arr;
 }
 
 var BUY_TABLE_COLS = [
     { key: 'displayName',   label: '机型' },
     { key: 'newPrice',      label: '价格' },
-    { key: 'seatCapacity',  label: '座位' },
+    { key: 'maxRows',       label: '排数上限' },
     { key: 'cruiseSpeed',   label: '速度' },
     { key: 'range',         label: '航程' },
     { key: 'mtow',          label: 'MTOW' },
@@ -1842,7 +1853,6 @@ function renderTableList() {
     if (!list) return;
 
     var sorted = getSortedAircraft();
-
     var thead = '<tr>';
     BUY_TABLE_COLS.forEach(function (col) {
         var sortedCls = (buySortKey === col.key) ? ' sorted' : '';
@@ -1850,79 +1860,90 @@ function renderTableList() {
             ? '<span class="sort-icon">' + (buySortAsc ? '▲' : '▼') + '</span>'
             : '<span class="sort-icon">⇅</span>';
 
-        thead +=
-            '<th class="' + sortedCls.trim() + '"' +
-                ' onclick="sortBuyTable(\'' + col.key + '\')">' +
-                col.label + arrow +
-            '</th>';
+        thead += '<th class="' + sortedCls.trim() + '" onclick="sortBuyTable(\'' + col.key + '\')">' + col.label + arrow + '</th>';
     });
     thead += '<th class="no-sort bt-col-action">操作</th></tr>';
 
     var tbody = '';
     sorted.forEach(function (ac) {
         var canAfford = gameState.money >= ac.newPrice;
-
         tbody += '<tr>';
         tbody += '<td class="bt-name">' + ac.displayName + '</td>';
         tbody += '<td class="bt-price">' + (ac.newPrice / 100000000).toFixed(1) + ' 亿</td>';
-        tbody += '<td>' + ac.seatCapacity + ' 座</td>';
+        tbody += '<td>' + ac.maxRows + ' 排</td>';
         tbody += '<td>' + ac.cruiseSpeed + ' km/h</td>';
         tbody += '<td>' + ac.range.toLocaleString('en-US') + ' km</td>';
         tbody += '<td>' + Math.round(ac.mtow / 1000) + ' t</td>';
         tbody += '<td>' + ac.maxPayload + ' t</td>';
         tbody += '<td>' + ac.fuelCapacity.toLocaleString('en-US') + ' L</td>';
         tbody += '<td>' + ac.cruiseFuelBurn + ' L/km</td>';
-        tbody +=
-            '<td class="bt-col-action">' +
-                '<button class="bt-buy" data-type="' + ac.shortName + '"' +
-                    (canAfford ? '' : ' disabled') +
-                    ' onclick="buyPlane(this)">' +
-                    (canAfford ? '购买' : '不足') +
-                '</button>' +
-            '</td>';
+        tbody += '<td class="bt-col-action"><button class="bt-buy" data-type="' + ac.shortName + '"' +
+                    (canAfford ? '' : ' disabled') + ' onclick="buyPlane(this)">' +
+                    (canAfford ? '购买' : '不足') + '</button></td>';
         tbody += '</tr>';
     });
 
-    list.innerHTML =
-        '<div class="buy-table-wrap">' +
-            '<table class="buy-table">' +
-                '<thead>' + thead + '</thead>' +
-                '<tbody>' + tbody + '</tbody>' +
-            '</table>' +
-        '</div>';
+    list.innerHTML = '<div class="buy-table-wrap"><table class="buy-table"><thead>' + thead + '</thead><tbody>' + tbody + '</tbody></table></div>';
 }
 
 function sortBuyTable(key) {
-    if (buySortKey === key) {
-        buySortAsc = !buySortAsc;
-    } else {
-        buySortKey = key;
-        buySortAsc = true;
-    }
+    if (buySortKey === key) buySortAsc = !buySortAsc;
+    else { buySortKey = key; buySortAsc = true; }
     renderTableList();
 }
 
-function onBuyDimClick(event) {
-    var shell = document.getElementById('buy-modal-shell');
-    if (!shell || !shell.classList.contains('active')) {
-        closeBuyModal();
+// ==================== 二手飞机渲染 ====================
+
+function renderUsedCardList() {
+    var list = document.getElementById('buy-list-card');
+    if (!list) return;
+
+    if (secondhandMarket.length === 0) {
+        list.innerHTML = '<div style="text-align:center; padding:40px; color:#94a3b8;">暂无二手飞机在售</div>';
         return;
     }
 
-    var rect = shell.getBoundingClientRect();
-    var clickY = event.clientY;
+    let html = '';
+    secondhandMarket.forEach(function (p, idx) {
+        let layoutHtml = '';
+        ['P', 'F', 'C', 'W', 'Y'].forEach(k => {
+            if (p.cabin[k] > 0) {
+                layoutHtml += `<span class="layout-tag ${k}">${k} ${p.cabin[k]}排</span>`;
+            }
+        });
 
-    if (clickY < rect.top || clickY > rect.bottom) {
-        closeBuyModal();
-    }
+        let fhClass = p.nextDCheck < 1000 ? 'warn' : (p.nextDCheck < 3000 ? '' : 'good');
+        let fhText = p.nextDCheck < 1000 ? `距 D 检 ${p.nextDCheck}h (危险)` : `距 D 检 ${p.nextDCheck}h`;
+
+        html += `
+            <div class="plane-card is-used">
+                <div class="pc-header">
+                    <div>
+                        <div class="pc-name">${p.displayName}</div>
+                        <div style="font-size:11px;color:#64748b;margin-top:4px;">机龄 ${p.age.toFixed(1)} 年 · 飞行 ${p.fh.toLocaleString()} h</div>
+                    </div>
+                    <div class="pc-price-box">
+                        <div class="pc-price">¥ ${(p.price/100000000).toFixed(2)} 亿</div>
+                        <div class="pc-orig-price">原价 ¥${(p.origPrice/100000000).toFixed(1)}亿</div>
+                    </div>
+                </div>
+                <div class="pc-stats">
+                    <div class="stat-item"><span>定检状态</span><span class="stat-val ${fhClass}">${fhText}</span></div>
+                    <div class="stat-item"><span>总座位</span><span class="stat-val">${getPlaneTotalSeats(p)} 座</span></div>
+                </div>
+                <div class="pc-layout">${layoutHtml}</div>
+                <button class="btn-buy" onclick="buyUsedPlane(${idx})">购买</button>
+            </div>
+        `;
+    });
+
+    list.innerHTML = html;
 }
 
-window.addEventListener('resize', function () {
-    var shell = document.getElementById('buy-modal-shell');
-    if (shell && shell.classList.contains('active')) {
-        layoutBuyModal(buyMode, false);
-    }
-});
+function renderUsedTableList() {
+    var list = document.getElementById('buy-list-table');
+    if (list) list.innerHTML = '<div style="text-align:center; padding:40px; color:#94a3b8;">二手飞机暂不支持表格视图</div>';
+}
 
 // ==================== 购买流程 ====================
 
@@ -1944,15 +1965,24 @@ function buyPlane(btn) {
         btn.classList.remove('pressed');
 
         selectedAircraftType = type;
+        selectedUsedPlaneIdx = -1; // 标记为全新
 
         const nextSeq = countFleetByType(type) + 1;
         const defaultName = getDefaultPlaneName(type) + '-' + String(nextSeq).padStart(4, '0');
 
         document.getElementById('naming-aircraft-type').textContent =
-            ac.displayName + ' · ' + ac.seatCapacity + ' 座';
+            ac.displayName + ' · 最多 ' + (ac.maxRows * ac.seatsPerRow.Y) + ' 座';
 
         const input = document.getElementById('naming-input');
         input.value = defaultName;
+
+        document.getElementById('cabin-config-box').style.display = 'block';
+        const labels = document.querySelectorAll('.naming-form label');
+        labels.forEach(l => {
+            if(l.textContent === '客舱布局') l.style.display = 'block';
+        });
+
+        initNamingCabinUI(ac);
 
         openNamingModal();
 
@@ -1963,18 +1993,173 @@ function buyPlane(btn) {
     }, 200);
 }
 
+function buyUsedPlane(idx) {
+    const p = secondhandMarket[idx];
+    if (!p) return;
+    
+    if (gameState.money < p.price) {
+        showToast('资金不足');
+        return;
+    }
+
+    selectedAircraftType = p.type;
+    selectedUsedPlaneIdx = idx;
+
+    document.getElementById('naming-aircraft-type').textContent = p.displayName + ' (二手)';
+    const input = document.getElementById('naming-input');
+    
+    const nextSeq = countFleetByType(p.type) + 1;
+    const baseName = p.displayName.replace(/^(空客|波音)\s*/, '');
+    input.value = baseName + '-' + String(nextSeq).padStart(4, '0');
+
+    document.getElementById('cabin-config-box').style.display = 'none';
+    const labels = document.querySelectorAll('.naming-form label');
+    labels.forEach(l => {
+        if(l.textContent === '客舱布局') l.style.display = 'none';
+    });
+
+    openNamingModal();
+
+    setTimeout(function () {
+        input.focus();
+        input.select();
+    }, 100);
+}
+
+function initNamingCabinUI(ac) {
+    currentCabinMaxRows = ac.maxRows;
+    currentCabinConfig = { P: 0, F: 0, C: 0, W: 0, Y: ac.maxRows };
+
+    ['P', 'F', 'C', 'W', 'Y'].forEach(function(k) {
+        var metaEl = document.getElementById('cabin-meta-' + k.toLowerCase());
+        if (metaEl) {
+            metaEl.textContent = ac.seatsPerRow[k] + '座/排';
+        }
+    });
+
+    ['P', 'F', 'C', 'W', 'Y'].forEach(function(k) {
+        let plusId = 'cabin-btn-' + k.toLowerCase() + '-plus';
+        let minusId = 'cabin-btn-' + k.toLowerCase() + '-minus';
+        bindCabinBtn(plusId, k, 1);
+        bindCabinBtn(minusId, k, -1);
+    });
+
+    updateNamingCabinUI();
+}
+
+function bindCabinBtn(id, type, delta) {
+    const btn = document.getElementById(id);
+    if (!btn) return;
+
+    const newBtn = btn.cloneNode(true);
+    btn.parentNode.replaceChild(newBtn, btn);
+
+    const startAction = function(e) {
+        e.preventDefault();
+        if (newBtn.disabled) return;
+        changeCabinVal(type, delta);
+
+        cabinHoldTimer = setTimeout(function() {
+            cabinHoldInterval = setInterval(function() {
+                changeCabinVal(type, delta);
+            }, 80);
+        }, 150);
+    };
+
+    const endAction = function() {
+        clearTimeout(cabinHoldTimer);
+        clearInterval(cabinHoldInterval);
+        cabinHoldTimer = null;
+        cabinHoldInterval = null;
+    };
+
+    newBtn.addEventListener('mousedown', startAction);
+    newBtn.addEventListener('touchstart', startAction, { passive: false });
+    newBtn.addEventListener('mouseup', endAction);
+    newBtn.addEventListener('mouseleave', endAction);
+    newBtn.addEventListener('touchend', endAction);
+    newBtn.addEventListener('touchcancel', endAction);
+}
+
+function changeCabinVal(type, delta) {
+    let newVal = currentCabinConfig[type] + delta;
+    if (newVal < 0) newVal = 0;
+
+    let usedRows = 0;
+    for (let k in currentCabinConfig) {
+        let val = (k === type) ? newVal : currentCabinConfig[k];
+        usedRows += val * CABIN_RULES[k].rows;
+    }
+
+    if (delta > 0 && usedRows > currentCabinMaxRows) return;
+
+    currentCabinConfig[type] = newVal;
+    updateNamingCabinUI();
+}
+
+function updateNamingCabinUI() {
+    const ac = getAircraftData(selectedAircraftType);
+
+    ['P', 'F', 'C', 'W', 'Y'].forEach(function(k) {
+        document.getElementById('cabin-val-' + k.toLowerCase()).textContent = currentCabinConfig[k];
+    });
+
+    let usedRows = 0;
+    let totalSeats = 0;
+    let revIndex = 0;
+
+    for (let k in currentCabinConfig) {
+        let cnt = currentCabinConfig[k];
+        let r = CABIN_RULES[k];
+        usedRows += cnt * r.rows;
+
+        let seatsPerRow = ac.seatsPerRow[k];
+        let seats = cnt * seatsPerRow;
+        totalSeats += seats;
+        revIndex += seats * r.fare;
+    }
+
+    document.getElementById('cabin-space-display').innerHTML = '已用 ' + usedRows.toFixed(1) + ' / ' + currentCabinMaxRows + ' 排';
+    document.getElementById('cabin-total-seats').textContent = totalSeats + ' 座';
+    document.getElementById('cabin-rev-index').textContent = Math.round(revIndex);
+
+    ['P', 'F', 'C', 'W', 'Y'].forEach(function(k) {
+        let val = currentCabinConfig[k];
+        let idPrefix = 'cabin-btn-' + k.toLowerCase();
+        document.getElementById(idPrefix + '-minus').disabled = (val <= 0);
+
+        let remain = currentCabinMaxRows - usedRows;
+        document.getElementById(idPrefix + '-plus').disabled = (remain < CABIN_RULES[k].rows);
+    });
+
+    let vizHtml = '';
+    ['P', 'F', 'C', 'W', 'Y'].forEach(function(k) {
+        if (currentCabinConfig[k] > 0) {
+            let r = CABIN_RULES[k];
+            let widthPct = (currentCabinConfig[k] * r.rows / currentCabinMaxRows) * 100;
+            let color = k === 'P' ? '#7e22ce' : k === 'F' ? '#dc2626' : k === 'C' ? '#ea580c' : k === 'W' ? '#0ea5e9' : '#2563eb';
+            vizHtml += '<div class="cabin-viz-seg" style="width:' + widthPct + '%; background:' + color + ';">' + k + '</div>';
+        }
+    });
+    document.getElementById('cabin-viz').innerHTML = vizHtml;
+}
+
 function openNamingModal() {
     selectedHomeIata = null;
-
     if (homeSelectCtrl) homeSelectCtrl.reset();
-
     updateNamingConfirmState();
-
     openOverlay('naming-overlay');
 }
 
 function closeNamingModal() {
     if (homeSelectCtrl) homeSelectCtrl.close();
+    
+    document.getElementById('cabin-config-box').style.display = 'block';
+    const labels = document.querySelectorAll('.naming-form label');
+    labels.forEach(l => {
+        if(l.textContent === '客舱布局') l.style.display = 'block';
+    });
+    
     closeOverlay('naming-overlay');
 }
 
@@ -2007,52 +2192,89 @@ function confirmBuy(btn) {
         btn.classList.remove('pressed');
 
         const ac = getAircraftData(selectedAircraftType);
-
-        if (gameState.money < ac.newPrice) {
-            showToast('资金不足');
-            closeNamingModal();
-            return;
-        }
-
-        const type = selectedAircraftType;
         const input = document.getElementById('naming-input');
         let finalName = input.value.trim();
 
-        if (!finalName) {
-            const nextSeq = countFleetByType(type) + 1;
-            finalName = getDefaultPlaneName(type) + '-' + String(nextSeq).padStart(4, '0');
+        let cost = ac.newPrice;
+        let newPlane = null;
+
+        if (selectedUsedPlaneIdx >= 0) {
+            const usedPlane = secondhandMarket[selectedUsedPlaneIdx];
+            cost = usedPlane.price;
+            
+            if (gameState.money < cost) {
+                showToast('资金不足');
+                closeNamingModal();
+                return;
+            }
+
+            if (!finalName) finalName = usedPlane.displayName + '-二手';
+
+            newPlane = {
+                name: finalName,
+                type: usedPlane.type,
+                home: selectedHomeIata,
+                cabin: usedPlane.cabin,
+                schedule: null,
+                purchaseTimeMs: gameTimeMs - (usedPlane.age * MS_PER_YEAR),
+                totalFh: usedPlane.fh,
+                nextACheckFh: usedPlane.nextACheckFh,
+                nextCCheckFh: usedPlane.nextCCheckFh,
+                nextDCheckFh: usedPlane.nextDCheckFh,
+                maintenanceUntilMs: 0,
+                pendingCheck: null,
+                _marker: null,
+                _state: null
+            };
+            
+            secondhandMarket.splice(selectedUsedPlaneIdx, 1);
+
+        } else {
+            if (gameState.money < cost) {
+                showToast('资金不足');
+                closeNamingModal();
+                return;
+            }
+
+            if (!finalName) {
+                const nextSeq = countFleetByType(selectedAircraftType) + 1;
+                finalName = getDefaultPlaneName(selectedAircraftType) + '-' + String(nextSeq).padStart(4, '0');
+            }
+
+            newPlane = {
+                name: finalName,
+                type: selectedAircraftType,
+                home: selectedHomeIata,
+                cabin: JSON.parse(JSON.stringify(currentCabinConfig)),
+                schedule: null,
+                purchaseTimeMs: gameTimeMs,
+                totalFh: 0,
+                nextACheckFh: CHECK_INTERVAL.A,
+                nextCCheckFh: CHECK_INTERVAL.C,
+                nextDCheckFh: CHECK_INTERVAL.D,
+                maintenanceUntilMs: 0,
+                pendingCheck: null,
+                _marker: null,
+                _state: null
+            };
         }
 
-        gameState.money -= ac.newPrice;
-
-        const newPlane = {
-            name: finalName,
-            type: type,
-            home: selectedHomeIata,
-            schedule: null,
-            purchaseTimeMs: gameTimeMs,
-            totalFh: 0,
-            nextACheckFh: CHECK_INTERVAL.A,
-            nextCCheckFh: CHECK_INTERVAL.C,
-            nextDCheckFh: CHECK_INTERVAL.D,
-            maintenanceUntilMs: 0,
-            pendingCheck: null,
-            _marker: null,
-            _state: null
-        };
+        changeMoney(-cost, `购买飞机 (${finalName})`);
         gameState.fleet.push(newPlane);
 
-        addReputation(ac.newPrice / 100000000 * 0.02);
+        if (selectedUsedPlaneIdx < 0) {
+            addReputation(ac.newPrice / 100000000 * 0.02);
+        }
 
-        updateMoneyDisplay();
         renderFleet();
-
         addPlaneMarker(newPlane);
 
         closeNamingModal();
         closeBuyModal();
 
         showToast('已购买 ' + finalName);
+        selectedUsedPlaneIdx = -1;
+        
     }, 200);
 }
 
@@ -2229,7 +2451,7 @@ function updatePlanesPosition() {
     });
 }
 
-// ==================== 段推进 ====================
+// ==================== 段推进 & 结算 ====================
 
 function handleSegAdvance(plane, absSeg) {
     if (!plane._state) {
@@ -2238,9 +2460,7 @@ function handleSegAdvance(plane, absSeg) {
     }
 
     const last = plane._state.lastAbsSeg;
-
     if (absSeg === last) return;
-
     if (absSeg < last) {
         plane._state.lastAbsSeg = absSeg;
         return;
@@ -2261,7 +2481,6 @@ function handleSegAdvance(plane, absSeg) {
 function emitSegmentStart(plane, absSeg) {
     const sched = plane.schedule;
     if (!sched) return;
-
     if (plane.pendingCheck) return;
 
     const dur = calcFlightDuration(sched.from, sched.to, plane.type);
@@ -2272,7 +2491,6 @@ function emitSegmentStart(plane, absSeg) {
     if (absSeg >= sched.flightsPerDay * 4) return;
 
     const firstMin = sched.firstDepartMin || 0;
-
     const local = absSeg % 4;
     const roundIdx = Math.floor(absSeg / 4);
 
@@ -2292,9 +2510,17 @@ function emitSegmentStart(plane, absSeg) {
     const repDelta = (dur.flightMin / 60) * ac.reputationRate;
     const fhDelta = dur.flightMin / 60;
 
+    const cabinDemands = calcCabinDemands(sched.from, sched.to);
+
     if (local === 0) {
-        const cap = calcRouteCapacity(sched.from, sched.to);
-        plane._lfOutbound = calcLoadFactor(sched.from, sched.to, plane.type, cap);
+        let totalPax = 0;
+        for (let k in plane.cabin) {
+            if (plane.cabin[k] > 0) {
+                const cap = plane.cabin[k] * ac.seatsPerRow[k];
+                totalPax += Math.min(cap, cabinDemands[k]);
+            }
+        }
+        plane._paxOutbound = totalPax;
 
         const flightNo = getFlightNo(sched, roundIdx, false);
         pushFlightEvent({
@@ -2309,25 +2535,26 @@ function emitSegmentStart(plane, absSeg) {
     } else if (local === 1) {
         const flightNo = getFlightNo(sched, roundIdx, false);
         const hasRoute = routeExists(sched.from, sched.to);
-
-        let lf = plane._lfOutbound;
-        if (lf === undefined) {
-            const cap = calcRouteCapacity(sched.from, sched.to);
-            lf = calcLoadFactor(sched.from, sched.to, plane.type, cap);
-        }
-        plane._lfOutbound = undefined;
+        const baseFare = calcBaseFare(sched.from, sched.to);
 
         let revenue = 0;
+        let totalPax = 0;
+
         if (hasRoute) {
-            const fare = calcBaseFare(sched.from, sched.to);
-            revenue = ac.seatCapacity * lf * fare;
+            for (let k in plane.cabin) {
+                if (plane.cabin[k] > 0) {
+                    const cap = plane.cabin[k] * ac.seatsPerRow[k];
+                    const sold = Math.min(cap, cabinDemands[k]);
+                    totalPax += sold;
+                    revenue += sold * baseFare * CABIN_RULES[k].fare;
+                }
+            }
         }
 
         const cost = calcSegmentCost(plane.type, dur.distance);
         const net = revenue - cost.total;
 
-        gameState.money += net;
-        updateMoneyDisplay();
+        changeMoney(net, `航班收益 (${flightNo})`);
 
         pushFlightEvent({
             time: timeStr,
@@ -2338,17 +2565,22 @@ function emitSegmentStart(plane, absSeg) {
             type: 'arr',
             amount: revenue,
             cost: cost.total,
-            loadFactor: lf,
-            pax: Math.round(ac.seatCapacity * lf)
+            pax: totalPax
         });
         addTodayFlight(revenue);
         addReputation(repDelta);
-
         accumulateFh(plane, fhDelta);
 
     } else if (local === 2) {
-        const cap = calcRouteCapacity(sched.to, sched.from);
-        plane._lfReturn = calcLoadFactor(sched.to, sched.from, plane.type, cap);
+        let totalPax = 0;
+        const reverseDemands = calcCabinDemands(sched.to, sched.from);
+        for (let k in plane.cabin) {
+            if (plane.cabin[k] > 0) {
+                const cap = plane.cabin[k] * ac.seatsPerRow[k];
+                totalPax += Math.min(cap, reverseDemands[k]);
+            }
+        }
+        plane._paxReturn = totalPax;
 
         const flightNo = getFlightNo(sched, roundIdx, true);
         const reverseExists = routeExists(sched.to, sched.from);
@@ -2365,25 +2597,27 @@ function emitSegmentStart(plane, absSeg) {
     } else if (local === 3) {
         const flightNo = getFlightNo(sched, roundIdx, true);
         const reverseExists = routeExists(sched.to, sched.from);
-
-        let lf = plane._lfReturn;
-        if (lf === undefined) {
-            const cap = calcRouteCapacity(sched.to, sched.from);
-            lf = calcLoadFactor(sched.to, sched.from, plane.type, cap);
-        }
-        plane._lfReturn = undefined;
+        const baseFare = calcBaseFare(sched.to, sched.from);
 
         let revenue = 0;
+        let totalPax = 0;
+
         if (reverseExists) {
-            const fare = calcBaseFare(sched.to, sched.from);
-            revenue = ac.seatCapacity * lf * fare;
+            const reverseDemands = calcCabinDemands(sched.to, sched.from);
+            for (let k in plane.cabin) {
+                if (plane.cabin[k] > 0) {
+                    const cap = plane.cabin[k] * ac.seatsPerRow[k];
+                    const sold = Math.min(cap, reverseDemands[k]);
+                    totalPax += sold;
+                    revenue += sold * baseFare * CABIN_RULES[k].fare;
+                }
+            }
         }
 
         const cost = calcSegmentCost(plane.type, dur.distance);
         const net = revenue - cost.total;
 
-        gameState.money += net;
-        updateMoneyDisplay();
+        changeMoney(net, `航班收益 (${flightNo})`);
 
         pushFlightEvent({
             time: timeStr,
@@ -2395,12 +2629,10 @@ function emitSegmentStart(plane, absSeg) {
             amount: revenue,
             cost: cost.total,
             empty: !reverseExists,
-            loadFactor: lf,
-            pax: Math.round(ac.seatCapacity * lf)
+            pax: totalPax
         });
         addTodayFlight(revenue);
         addReputation(repDelta);
-
         accumulateFh(plane, fhDelta);
     }
 }
@@ -2447,12 +2679,12 @@ function renderFlightList() {
 
         let amountStr = '';
         if (e.amount && e.amount > 0) {
-            amountStr = '<span class="fb-amount">+¥' + formatMoneyShort(e.amount) + '</span>';
+            amountStr = '<span class="fb-amount">+¥' + formatMoneyShort(e.amount).replace('¥', '') + '</span>';
         }
 
         let costStr = '';
         if (e.cost && e.cost > 0) {
-            costStr = '<span class="fb-cost">-¥' + formatMoneyShort(e.cost) + '</span>';
+            costStr = '<span class="fb-cost">-¥' + formatMoneyShort(e.cost).replace('¥', '') + '</span>';
         }
 
         if (e.empty && !e.amount) {
@@ -2510,7 +2742,7 @@ function openScheduleModal(planeIdx) {
     document.getElementById('sch-plane-name').textContent = plane.name;
     const data = getAircraftData(plane.type);
     document.getElementById('sch-plane-type').textContent =
-        data.displayName + ' · ' + data.seatCapacity + ' 座';
+        data.displayName + ' · ' + getPlaneTotalSeats(plane) + ' 座';
     document.getElementById('sch-plane-loc').textContent = getPlaneLocationText(plane);
 
     if (schRouteSelectCtrl) {
@@ -2605,25 +2837,16 @@ function getPlaneLocationText(plane) {
     const elapsedMin = (gameTimeMs - dayStart) / 60000;
     const totalEndMin = firstMin + sched.flightsPerDay * dur.roundMin;
 
-    if (elapsedMin < firstMin) {
-        return a.name + ' ' + a.iata;
-    }
-    if (elapsedMin >= totalEndMin) {
-        return a.name + ' ' + a.iata;
-    }
+    if (elapsedMin < firstMin) return a.name + ' ' + a.iata;
+    if (elapsedMin >= totalEndMin) return a.name + ' ' + a.iata;
 
     const localElapsed = elapsedMin - firstMin;
     const roundElapsed = localElapsed - Math.floor(localElapsed / dur.roundMin) * dur.roundMin;
 
-    if (roundElapsed < dur.flightMin) {
-        return '执飞 ' + sched.from + ' → ' + sched.to;
-    } else if (roundElapsed < dur.flightMin + dur.turnTo) {
-        return b.name + ' ' + b.iata;
-    } else if (roundElapsed < 2 * dur.flightMin + dur.turnTo) {
-        return '执飞 ' + sched.to + ' → ' + sched.from;
-    } else {
-        return a.name + ' ' + a.iata;
-    }
+    if (roundElapsed < dur.flightMin) return '执飞 ' + sched.from + ' → ' + sched.to;
+    else if (roundElapsed < dur.flightMin + dur.turnTo) return b.name + ' ' + b.iata;
+    else if (roundElapsed < 2 * dur.flightMin + dur.turnTo) return '执飞 ' + sched.to + ' → ' + sched.from;
+    else return a.name + ' ' + a.iata;
 }
 
 function scheduleRouteLabel(key) {
@@ -2667,12 +2890,9 @@ function updateScheduleUI() {
     const dur = calcFlightDuration(parts[0], parts[1], aircraftType);
     if (!dur) return;
 
-    document.getElementById('sch-di-flight').textContent =
-        fmtMin(dur.flightMin) + ' × 2';
-    document.getElementById('sch-di-turn').textContent =
-        fmtMin(dur.turnFrom) + ' + ' + fmtMin(dur.turnTo);
-    document.getElementById('sch-di-round').textContent =
-        fmtMin(dur.roundMin);
+    document.getElementById('sch-di-flight').textContent = fmtMin(dur.flightMin) + ' × 2';
+    document.getElementById('sch-di-turn').textContent = fmtMin(dur.turnFrom) + ' + ' + fmtMin(dur.turnTo);
+    document.getElementById('sch-di-round').textContent = fmtMin(dur.roundMin);
 
     const firstMin = parseHHMM(firstDepInput.value);
     const firstDepValid = (firstMin !== null);
@@ -2705,8 +2925,7 @@ function updateScheduleUI() {
         if (endMin > 1439) {
             input.classList.add('error');
             hint.classList.add('error');
-            hint.textContent = '末班落地 ' + minToHHMM(endMin) +
-                '，超出当天。最多 ' + maxF + ' 趟，或提前首班';
+            hint.textContent = '末班落地 ' + minToHHMM(endMin) + '，超出当天。最多 ' + maxF + ' 趟，或提前首班';
             saveBtn.disabled = true;
         } else {
             hint.classList.remove('error');
@@ -2715,7 +2934,6 @@ function updateScheduleUI() {
         }
 
         renderSchedulePreview(editingScheduleRouteKey, flights, aircraftType, firstMin);
-
     } else {
         saveBtn.disabled = true;
         previewBox.innerHTML = '<div class="pv-empty">暂无时刻</div>';
@@ -2740,15 +2958,11 @@ function renderSchedulePreview(routeKey, flights, aircraftType, firstMin) {
         html +=
             '<div class="pv-row">' +
                 '<span class="pv-time">' + fmtTimeOfDay(t) + '</span>' +
-                '<span class="pv-route">' + from + ' → ' + to +
-                    '<span class="pv-tag paid">载客</span>' +
-                '</span>' +
+                '<span class="pv-route">' + from + ' → ' + to + '<span class="pv-tag paid">载客</span></span>' +
             '</div>';
         t += dur.flightMin + dur.turnTo;
 
-        const tag = hasReverse
-            ? '<span class="pv-tag paid">载客</span>'
-            : '<span class="pv-tag empty">空飞</span>';
+        const tag = hasReverse ? '<span class="pv-tag paid">载客</span>' : '<span class="pv-tag empty">空飞</span>';
         html +=
             '<div class="pv-row">' +
                 '<span class="pv-time">' + fmtTimeOfDay(t) + '</span>' +
@@ -2769,7 +2983,6 @@ function saveSchedule(btn) {
 
     setTimeout(function () {
         btn.classList.remove('pressed');
-
         const plane = gameState.fleet[editingSchedulePlaneIdx];
         if (!plane) return;
 
@@ -2789,11 +3002,10 @@ function saveSchedule(btn) {
         };
 
         plane._state = null;
-        plane._lfOutbound = undefined;
-        plane._lfReturn = undefined;
+        plane._paxOutbound = undefined;
+        plane._paxReturn = undefined;
 
         closeScheduleModal();
-
         renderFleet();
         updateSinglePlane(plane);
 
@@ -2822,15 +3034,10 @@ function renderRouteTab() {
         html +=
             '<div class="route-card" data-route-idx="' + idx + '">' +
                 '<div class="rc-top">' +
-                    '<div class="rc-name">' +
-                        r.fromName + ' ' + r.from +
-                        '<span class="rc-arrow"> → </span>' +
-                        r.toName + ' ' + r.to +
-                    '</div>' +
+                    '<div class="rc-name">' + r.fromName + ' ' + r.from + '<span class="rc-arrow"> → </span>' + r.toName + ' ' + r.to + '</div>' +
                     '<span class="rc-index">' + demandTotal + ' 人次/日</span>' +
                 '</div>' +
-                '<div class="rc-info">航距 <b>' + dist + '</b> km · 票价 <b>¥' +
-                    fare.toLocaleString('en-US') + '</b></div>' +
+                '<div class="rc-info">航距 <b>' + dist + '</b> km · 票价 <b>¥' + fare.toLocaleString('en-US') + '</b></div>' +
             '</div>';
     });
     list.innerHTML = html;
@@ -2865,17 +3072,12 @@ function renderAirportTab() {
         html +=
             '<div class="airport-card" data-iata="' + a.iata + '">' +
                 '<div class="ac-top">' +
-                    '<div>' +
-                        '<span class="ac-name">' + a.name + '</span>' +
-                        '<span class="ac-iata">' + a.iata + '</span>' +
-                    '</div>' +
+                    '<div><span class="ac-name">' + a.name + '</span><span class="ac-iata">' + a.iata + '</span></div>' +
                     '<span class="ac-index">' + a.airportIndex.toFixed(1) + '</span>' +
                 '</div>' +
                 '<div class="ac-info">' +
-                    '<span>' + a.throughput.toLocaleString('en-US') + ' 万</span>' +
-                    '<span class="dot">·</span>' +
-                    '<span>' + a.grade + '</span>' +
-                    '<span class="dot">·</span>' +
+                    '<span>' + a.throughput.toLocaleString('en-US') + ' 万</span><span class="dot">·</span>' +
+                    '<span>' + a.grade + '</span><span class="dot">·</span>' +
                     '<span>距市 <b>' + a.distance + '</b> km</span>' +
                 '</div>' +
                 tags +
@@ -2900,7 +3102,6 @@ function openRoutePicker() {
     if (rpToSelectCtrl) rpToSelectCtrl.reset();
 
     updateRoutePickerNextBtn();
-
     openOverlay('route-picker-overlay');
 }
 
@@ -2989,7 +3190,6 @@ function confirmRouteTabCreate(btn) {
 
     setTimeout(function () {
         if (btn) btn.classList.remove('pressed');
-
         if (!routePickerFrom || !routePickerTo) return;
 
         const from = AIRPORT_GCJ.find(function (a) { return a.iata === routePickerFrom; });
@@ -3004,11 +3204,9 @@ function confirmRouteTabCreate(btn) {
             return;
         }
 
-        gameState.money -= openFee;
-        updateMoneyDisplay();
+        changeMoney(-openFee, `开通航线：${from.iata}-${to.iata}`);
 
         drawRoute(from, to);
-
         addReputation(openFee / 100000000);
 
         renderRouteTab();
@@ -3034,9 +3232,7 @@ function closeReturnTitle() {
 
 function confirmReturnTitle() {
     closeReturnTitle();
-
     closePlaneDetail();
-
     clearAllRoutes();
     clearAllPlaneMarkers();
 
@@ -3045,7 +3241,10 @@ function confirmReturnTitle() {
 
     gameState.money = 1000000000;
     gameState.fleet = [];
+    gameState.transactions = [];
+    gameState.loans = [];
     airportStates = {};
+    secondhandMarket = [];
 
     airlineInfo.name = '翼掠航空';
     airlineInfo.nameEn = 'Winged Air';
@@ -3067,7 +3266,6 @@ function confirmReturnTitle() {
         el.classList.remove('active');
     });
     refreshOverlayDim();
-
     refreshAllAirportDots();
 
     renderFleet();
@@ -3076,6 +3274,79 @@ function confirmReturnTitle() {
 
     bgAnimating = true;
     requestAnimationFrame(bgLoop);
+}
+
+// ==================== 二手市场生成逻辑 ====================
+
+function generateUsedPlane() {
+    const aircraftList = Object.values(AIRCRAFT_DATA);
+    const ac = aircraftList[Math.floor(Math.random() * aircraftList.length)];
+
+    const age = 1 + Math.random() * 14;
+    const fh = Math.floor(age * 3000 + (Math.random() * 1000 - 500));
+    
+    const baseD = Math.floor(fh / 10000) * 10000 + 10000;
+    const nextDCheck = baseD - fh;
+
+    let cabin = { P: 0, F: 0, C: 0, W: 0, Y: 0 };
+    const layoutRoll = Math.random();
+    if (layoutRoll < 0.3) {
+        cabin.Y = Math.floor(ac.maxRows);
+    } else if (layoutRoll < 0.8) {
+        cabin.C = Math.floor(ac.maxRows * 0.1);
+        let used = cabin.C * CABIN_RULES.C.rows;
+        cabin.Y = Math.floor((ac.maxRows - used) / CABIN_RULES.Y.rows);
+    } else {
+        cabin.P = Math.random() > 0.5 ? 1 : 0;
+        cabin.F = Math.floor(ac.maxRows * 0.05);
+        cabin.C = Math.floor(ac.maxRows * 0.15);
+        let used = cabin.P*4 + cabin.F*3 + cabin.C*2;
+        cabin.Y = Math.floor((ac.maxRows - used) / CABIN_RULES.Y.rows);
+    }
+
+    let price = ac.newPrice * Math.pow(0.94, age);
+    
+    if (nextDCheck < 3000) price *= 0.7;
+    if (nextDCheck < 1000) price *= 0.7;
+
+    if (cabin.P === 0 && cabin.F === 0 && cabin.W === 0) price *= 1.05;
+
+    return {
+        type: ac.shortName,
+        displayName: ac.displayName,
+        origPrice: ac.newPrice,
+        age: age,
+        fh: fh,
+        nextACheckFh: Math.ceil(fh / 300) * 300,
+        nextCCheckFh: Math.ceil(fh / 3000) * 3000,
+        nextDCheckFh: baseD,
+        nextDCheck: nextDCheck,
+        cabin: cabin,
+        price: Math.round(price)
+    };
+}
+
+function refreshSecondhandMarket() {
+    while (secondhandMarket.length < 10) {
+        secondhandMarket.push(generateUsedPlane());
+    }
+    if (secondhandMarket.length > 12) {
+        secondhandMarket = secondhandMarket.slice(-12);
+    }
+}
+
+function onMonthChangeForMarket() {
+    refreshSecondhandMarket();
+    showToast('二手市场已更新');
+}
+
+function initSecondhandMarket(loadData) {
+    if (loadData && loadData.secondhandMarket) {
+        secondhandMarket = loadData.secondhandMarket;
+    } else {
+        secondhandMarket = [];
+        refreshSecondhandMarket();
+    }
 }
 
 // ==================== 全局点击：关闭下拉 ====================
